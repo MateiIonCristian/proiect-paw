@@ -1,0 +1,101 @@
+<!DOCTYPE html>
+<html lang="ro">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ReviewHub - Profilul Meu</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <style>
+        .profile-header { background: #f8f9fa; border-bottom: 1px solid #dee2e6; padding: 40px 0; }
+        .user-avatar { width: 100px; height: 100px; background: #0dcaf0; color: white; display: flex; align-items: center; justify-content: center; border-radius: 50%; font-size: 2.5rem; margin-bottom: 15px; }
+        .stats-card { border-radius: 10px; border: none; box-shadow: 0 2px 10px rgba(0,0,0,0.05); }
+    </style>
+</head>
+<body class="bg-light">
+
+<nav class="navbar navbar-expand-lg navbar-dark bg-dark sticky-top shadow-sm">
+  <div class="container">
+    <a class="navbar-brand fw-bold text-info" href="index.html">ReviewHub</a>
+    <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
+      <span class="navbar-toggler-icon"></span>
+    </button>
+    <div class="collapse navbar-collapse" id="navbarNav">
+      <ul class="navbar-nav me-auto">
+        <li class="nav-item"><a class="nav-link" href="index.html">Acasă</a></li>
+        <li class="nav-item"><a class="nav-link" href="firme.html">Firme</a></li>
+        <li class="nav-item"><a class="nav-link" href="top-firme.html">Top Clasament</a></li>
+        <li class="nav-item"><a class="nav-link" href="adauga-recenzie.html">Scrie Recenzie</a></li>
+        <li class="nav-item"><a class="nav-link" href="categorii.html">Categorii</a></li>
+        <li class="nav-item"><a class="nav-link" href="despre.html">Despre Noi</a></li>
+        <li class="nav-item"><a class="nav-link" href="contact.html">Contact</a></li>
+      </ul>
+      <div class="d-flex align-items-center border-start ps-3 ms-3 text-white">
+        <div class="text-end me-3">
+          <p class="mb-0 fw-bold small">Matei Ion Cristian</p>
+          <p class="mb-0 text-muted small" style="font-size: 0.7rem;">cristian@email.com</p>
+        </div>
+        <a href="profil.html" class="btn btn-sm btn-info active text-white">Profil</a>
+      </div>
+    </div>
+  </div>
+</nav>
+
+<div class="profile-header text-center">
+    <div class="container">
+        <div class="user-avatar mx-auto shadow">
+            <i class="fas fa-user-check"></i>
+        </div>
+        <h2 class="fw-bold mb-1">Matei Ion Cristian</h2>
+        <p class="text-muted"><i class="fas fa-envelope me-2"></i>cristian@email.com</p>
+        <span class="badge bg-primary px-3 rounded-pill">Utilizator Activ</span>
+    </div>
+</div>
+
+<div class="container my-5">
+    <div class="row">
+        <div class="col-md-4">
+            <div class="card stats-card p-4 mb-4">
+                <h5 class="fw-bold mb-3 border-bottom pb-2">Detalii Cont</h5>
+                <p class="mb-2"><strong>Membru din:</strong> 24 Martie 2026</p>
+                <p class="mb-2"><strong>Recenzii postate:</strong> 12</p>
+                <p class="mb-0"><strong>Firme urmărite:</strong> 5</p>
+                <hr>
+                <button class="btn btn-sm btn-outline-dark w-100 mb-2">Editează datele</button>
+                <button class="btn btn-sm btn-outline-danger w-100">Deconectare</button>
+            </div>
+        </div>
+
+        <div class="col-md-8">
+            <div class="card stats-card p-4">
+                <h5 class="fw-bold mb-4 border-bottom pb-2">Istoricul recenziilor mele</h5>
+                
+                <div class="border rounded p-3 mb-3 bg-white shadow-sm">
+                    <div class="d-flex justify-content-between align-items-center mb-2">
+                        <h6 class="fw-bold text-primary mb-0">TechSolutions SRL</h6>
+                        <span class="text-warning small"><i class="fas fa-star"></i> 5.0</span>
+                    </div>
+                    <p class="text-muted small mb-2">Postată pe: 15 Martie 2026</p>
+                    <p class="mb-0">"Am colaborat excelent cu această echipă. Recomand cu toată încrederea pentru proiecte software!"</p>
+                </div>
+
+                <div class="border rounded p-3 mb-3 bg-white shadow-sm">
+                    <div class="d-flex justify-content-between align-items-center mb-2">
+                        <h6 class="fw-bold text-primary mb-0">AutoPro Service</h6>
+                        <span class="text-warning small"><i class="fas fa-star"></i> 3.0</span>
+                    </div>
+                    <p class="text-muted small mb-2">Postată pe: 02 Martie 2026</p>
+                    <p class="mb-0">"Mecanici buni, dar timpul de așteptare a fost mult prea mare față de ce mi s-a comunicat inițial."</p>
+                </div>
+
+                <div class="text-center mt-3">
+                    <a href="adauga-recenzie.html" class="btn btn-primary">Scrie o recenzie nouă</a>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+</body>
+</html>
