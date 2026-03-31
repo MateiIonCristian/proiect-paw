@@ -1,0 +1,56 @@
+<!DOCTYPE html>
+<html lang="ro">
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>@ViewData["Title"] - ReviewHub</title>
+    <link rel="stylesheet" href="~/lib/bootstrap/dist/css/bootstrap.min.css" />
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/all.min.css" />
+    <link rel="stylesheet" href="~/css/site.css" asp-append-version="true" />
+    <style>
+        .navbar-brand { font-size: 1.5rem; }
+        .nav-link.active { color: #0dcaf0 !important; font-weight: bold; }
+        .hover-shadow:hover { transform: translateY(-3px); box-shadow: 0 .5rem 1rem rgba(0,0,0,.15)!important; transition: all 0.3s ease; }
+    </style>
+</head>
+<body class="bg-light">
+    <header>
+        <nav class="navbar navbar-expand-lg navbar-dark bg-dark sticky-top shadow-sm mb-4">
+            <div class="container">
+                <a class="navbar-brand fw-bold text-info" asp-controller="Home" asp-action="Index">ReviewHub</a>
+                <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
+                    <span class="navbar-toggler-icon"></span>
+                </button>
+                <div class="collapse navbar-collapse" id="navbarNav">
+                    <ul class="navbar-nav me-auto">
+                        <li class="nav-item"><a class="nav-link" asp-controller="Home" asp-action="Index">Acasă</a></li>
+                        <li class="nav-item"><a class="nav-link" asp-controller="Firme" asp-action="Index">Firme</a></li>
+                        <li class="nav-item"><a class="nav-link text-warning fw-bold" asp-controller="Firme" asp-action="Create"><i class="fas fa-plus-circle me-1"></i>Adaugă Firmă</a></li>
+                        <li class="nav-item"><a class="nav-link" asp-controller="Home" asp-action="TopClasament">Top Clasament</a></li>
+                        <li class="nav-item"><a class="nav-link" asp-controller="Firme" asp-action="AddRecenzie">Scrie Recenzie</a></li>
+                        <li class="nav-item"><a class="nav-link" asp-controller="Home" asp-action="Categorii">Categorii</a></li>
+                        <li class="nav-item"><a class="nav-link" asp-controller="Home" asp-action="Despre">Despre Noi</a></li>
+                    </ul>
+                    <div class="d-flex align-items-center border-start ps-3 ms-3 text-white">
+                        <div class="text-end me-3 d-none d-lg-block">
+                            <p class="mb-0 fw-bold small text-white">Matei Ion Cristian</p>
+                            <p class="mb-0 text-muted small" style="font-size: 0.7rem;">cristian@email.com</p>
+                        </div>
+                        <a asp-controller="Home" asp-action="Profil" class="btn btn-sm btn-outline-info">Profilul meu</a>
+                    </div>
+                </div>
+            </div>
+        </nav>
+    </header>
+    <div class="container">
+        <main role="main" class="pb-3">@RenderBody()</main>
+    </div>
+    <footer class="border-top footer mt-5 py-4 bg-white shadow-sm">
+        <div class="container text-center">
+            <p class="mb-0 text-muted small">&copy; 2026 - Toate drepturile rezervate Matei Ion Cristian</p>
+        </div>
+    </footer>
+    <script src="~/lib/jquery/dist/jquery.min.js"></script>
+    <script src="~/lib/bootstrap/dist/js/bootstrap.bundle.min.js"></script>
+</body>
+</html>

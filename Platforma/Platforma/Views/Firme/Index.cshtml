@@ -1,0 +1,51 @@
+@model IEnumerable<Platforma.Models.Firma>
+@{ ViewData["Title"] = "Catalog Firme"; }
+<div class="container my-5">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h2 class="fw-bold m-0">Toate Firmele</h2>
+        <a asp-action="Create" class="btn btn-primary shadow-sm fw-bold px-4">+ Adaugă Firmă Nouă</a>
+    </div>
+    <div class="row g-4">
+        @foreach (var item in Model) {
+            <div class="col-md-4">
+                <div class="card shadow-sm border-0 h-100 hover-shadow transition">
+                    <div class="card-body d-flex flex-column">
+                        <div class="d-flex justify-content-between align-items-start mb-2">
+                            <h5 class="fw-bold mb-0">@item.Nume</h5>
+                            <div class="dropdown">
+                                <button class="btn btn-sm btn-light border-0" type="button" data-bs-toggle="dropdown">
+                                    <i class="fas fa-ellipsis-v text-muted"></i>
+                                </button>
+                                <ul class="dropdown-menu dropdown-menu-end shadow-sm border-0">
+                                    <li><a class="dropdown-item" asp-action="Edit" asp-route-id="@item.Id"><i class="fas fa-edit me-2 text-warning"></i>Editează</a></li>
+                                    <li><hr class="dropdown-divider"></li>
+                                    <li><a class="dropdown-item text-danger" asp-action="Delete" asp-route-id="@item.Id"><i class="fas fa-trash-alt me-2"></i>Șterge</a></li>
+                                </ul>
+                            </div>
+                        </div>
+                        <p class="text-muted small mb-3">
+                            <span class="badge bg-light text-dark border">
+                                @(item.Categorie?.Nume ?? "Fără Categorie")
+                            </span>
+                        </p>
+                        <p class="card-text flex-grow-1 text-muted">@item.Descriere</p>
+                        <div class="mt-auto pt-3 border-top">
+                            @{
+                                var avg = item.Recenzii.Any() ? item.Recenzii.Average(r => r.Nota) : 0;
+                            }
+                            <div class="text-warning mb-3">
+                                @for(int i=0; i<(int)Math.Round(avg); i++) { <i class="fas fa-star"></i> }
+                                @for(int i=(int)Math.Round(avg); i<5; i++) { <i class="far fa-star text-muted opacity-25"></i> }
+                                <span class="text-dark fw-bold ms-2">@avg.ToString("F1")</span>
+                            </div>
+                            <div class="d-flex gap-2">
+                                <a asp-action="Details" asp-route-id="@item.Id" class="btn btn-dark btn-sm flex-grow-1 shadow-sm">Detalii</a>
+                                <a asp-action="AddRecenzie" class="btn btn-outline-warning btn-sm flex-grow-1">Scrie Recenzie</a>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        }
+    </div>
+</div>

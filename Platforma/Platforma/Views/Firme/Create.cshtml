@@ -1,0 +1,51 @@
+@model Platforma.Models.Firma
+
+@{
+    ViewData["Title"] = "Adaugă Firmă";
+}
+
+<div class="container my-5">
+    <div class="row justify-content-center">
+        <div class="col-md-6 bg-white p-4 shadow rounded border-top border-5 border-primary">
+            <h3 class="mb-4 text-center fw-bold">Înregistrează o Firmă Nouă</h3>
+            
+            <form asp-action="Create" method="post">
+                <div class="mb-3">
+                    <label asp-for="Nume" class="form-label fw-bold">Nume Firmă</label>
+                    <input asp-for="Nume" class="form-control" placeholder="Ex: TechSolutions SRL" required>
+                    <span asp-validation-for="Nume" class="text-danger small"></span>
+                </div>
+                
+                <div class="row">
+                    <div class="col-md-6 mb-3">
+                        <label asp-for="CategorieId" class="form-label fw-bold">Categorie</label>
+                        <select asp-for="CategorieId" class="form-select" asp-items="ViewBag.Categorii" required>
+                            <option value="">-- Alege --</option>
+                        </select>
+                    </div>
+                    <div class="col-md-6 mb-3">
+                        <label asp-for="OrasId" class="form-label fw-bold">Oraș</label>
+                        <select asp-for="OrasId" class="form-select" asp-items="ViewBag.Orase" required>
+                            <option value="">-- Alege --</option>
+                        </select>
+                    </div>
+                </div>
+                
+                <div class="mb-3">
+                    <label asp-for="Descriere" class="form-label fw-bold">Scurtă Descriere</label>
+                    <textarea asp-for="Descriere" class="form-control" rows="3"></textarea>
+                </div>
+                
+                <div class="mb-3">
+                    <label asp-for="Adresa" class="form-label fw-bold">Adresă</label>
+                    <input asp-for="Adresa" class="form-control" placeholder="Strada, Număr">
+                </div>
+                
+                <div class="d-flex gap-2 mt-4">
+                    <a asp-action="Index" class="btn btn-outline-secondary w-50">Anulează</a>
+                    <button type="submit" class="btn btn-primary w-50 fw-bold shadow-sm">Salvează Firma</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>

@@ -1,0 +1,20 @@
+@model IEnumerable<Platforma.Models.Categorie>
+@{ ViewData["Title"] = "Categorii"; }
+<div class="container my-5 text-center">
+    <h2 class="fw-bold mb-4">Categorii de interes</h2>
+    <p class="text-muted mb-5">Explorează firmele în funcție de domeniul lor de activitate.</p>
+    <div class="row g-4 mt-3">
+        @foreach (var cat in Model) {
+            <div class="col-md-4">
+                <a asp-controller="Firme" asp-action="Index" class="text-decoration-none">
+                    <div class="card p-5 shadow-sm border-0 h-100 hover-shadow transition">
+                        <h4 class="fw-bold text-primary">@cat.Nume</h4>
+                    </div>
+                </a>
+            </div>
+        }
+        @if (!Model.Any()) {
+            <div class="col-12 text-center py-5"><p class="text-muted">Încă nu avem nicio categorie.</p></div>
+        }
+    </div>
+</div>
