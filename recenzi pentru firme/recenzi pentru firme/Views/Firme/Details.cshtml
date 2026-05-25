@@ -1,0 +1,83 @@
+@*
+    DESCRIERE:
+    Pagina cu detaliile unei firme specifice (Details).
+    Afișează descrierea detaliată, serviciile oferite, recenziile postate de clienți (inclusiv ratingul cu stele) și informațiile de contact rapide într-un panou lateral.
+*@
+
+@model recenzi_pentru_firme.Models.Firma
+@{
+    ViewData["Title"] = "Detalii " + Model.Nume;
+}
+
+<div class="container mt-4">
+    <nav aria-label="breadcrumb">
+        <ol class="breadcrumb">
+            <li class="breadcrumb-item"><a asp-controller="Firme" asp-action="Index">Firme</a></li>
+            <li class="breadcrumb-item active">@Model.Nume</li>
+        </ol>
+    </nav>
+
+    <div class="row">
+        <div class="col-md-8">
+            <div class="card mb-4 shadow-sm">
+                <div class="card-body">
+                    <h2 class="fw-bold text-primary">@Model.Nume</h2>
+                    <span class="badge bg-info mb-3">@Model.Categorie?.Nume</span>
+                    <p class="lead">@Model.Descriere</p>
+                    
+                    <h5 class="mt-4 fw-bold border-bottom pb-2">Servicii oferite</h5>
+                    <ul class="list-group list-group-flush">
+                        @if (Model.Servicii != null && Model.Servicii.Any()) {
+                            foreach(var s in Model.Servicii) {
+                                <li class="list-group-item"><i class="fas fa-check text-success me-2"></i>@s.Denumire</li>
+                            }
+                        } else {
+                            <li class="list-group-item text-muted small">Nu există servicii listate.</li>
+                        }
+                    </ul>
+                </div>
+            </div>
+
+            <div class="card shadow-sm">
+                <div class="card-body">
+                    <h5 class="fw-bold mb-3">Recenzii Clienți</h5>
+                    @if (Model.Recenzii != null && Model.Recenzii.Any()) {
+                        foreach(var r in Model.Recenzii) {
+                            <div class="border-bottom mb-3 pb-2">
+                                <div class="d-flex justify-content-between">
+                                    <strong>@r.Autor</strong>
+                                    <span class="text-warning">
+                                        @for(int i=0; i<r.Nota; i++) { <i class="fas fa-star"></i> }
+                                    </span>
+                                </div>
+                                <p class="small text-muted mb-0">@r.Continut</p>
+                            </div>
+                        }
+                    } else {
+                        <p class="text-muted small">Firma nu are încă recenzii.</p>
+                    }
+                </div>
+            </div>
+        </div>
+
+        <div class="col-md-4">
+            <div class="card shadow-sm bg-dark text-white mb-4">
+                <div class="card-body">
+                    <h5 class="fw-bold"><i class="fas fa-address-book me-2"></i>Contact</h5>
+                    <hr class="bg-secondary">
+                    <p class="mb-1 small"><i class="fas fa-envelope me-2 text-info"></i>@(Model.Contact?.Email ?? "N/A")</p>
+                    <p class="mb-1 small"><i class="fas fa-phone me-2 text-info"></i>@(Model.Contact?.Telefon ?? "N/A")</p>
+                    <p class="mb-0 small"><i class="fas fa-map-pin me-2 text-info"></i>@Model.Adresa</p>
+                </div>
+            </div>
+            <div class="d-grid gap-2">
+                <a asp-controller="Recenzii" asp-action="Create" asp-route-firmaId="@Model.Id" class="btn btn-success"><i class="fas fa-star me-2"></i>Lasă o Recenzie</a>
+                @if (User.IsInRole("Administrator"))
+                {
+                    <a asp-action="Edit" asp-route-id="@Model.Id" class="btn btn-warning"><i class="fas fa-edit me-2"></i>Editează Datele</a>
+                }
+                <a asp-action="Index" class="btn btn-outline-secondary"><i class="fas fa-arrow-left me-2"></i>Înapoi la Catalog</a>
+            </div>
+        </div>
+    </div>
+</div>

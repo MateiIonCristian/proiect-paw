@@ -1,0 +1,66 @@
+@*
+    DESCRIERE:
+    Vizualizare destinată înregistrării unei noi firme în sistem (Create).
+    Conține un formular complet cu câmpuri pentru Nume, Adresă, Descriere, Categorie și Oraș (folosind liste drop-down din ViewBag).
+*@
+
+@model recenzi_pentru_firme.Models.Firma
+
+@{
+    ViewData["Title"] = "Adaugă Firmă";
+}
+
+<div class="container mt-4">
+    <div class="row justify-content-center">
+        <div class="col-md-6">
+            <div class="card shadow">
+                <div class="card-body">
+                    <h2 class="card-title text-center mb-4">Înregistrează o Firmă</h2>
+                    
+                    <form asp-action="Create">
+                        <div asp-validation-summary="ModelOnly" class="text-danger mb-3"></div>
+
+                        <div class="mb-3">
+                            <label asp-for="Nume" class="form-label font-weight-bold">Nume Firmă</label>
+                            <input asp-for="Nume" class="form-control" placeholder="Ex: Restaurant Central" />
+                            <span asp-validation-for="Nume" class="text-danger"></span>
+                        </div>
+
+                        <div class="mb-3">
+                            <label asp-for="Adresa" class="form-label font-weight-bold">Adresă</label>
+                            <input asp-for="Adresa" class="form-control" placeholder="Strada, Orașul" />
+                            <span asp-validation-for="Adresa" class="text-danger"></span>
+                        </div>
+
+                        <div class="mb-3">
+                            <label asp-for="Descriere" class="form-label font-weight-bold">Scurtă Descriere</label>
+                            <textarea asp-for="Descriere" class="form-control" rows="3" placeholder="Ce servicii oferă?"></textarea>
+                            <span asp-validation-for="Descriere" class="text-danger"></span>
+                        </div>
+
+                        <div class="mb-3">
+                            <label asp-for="CategorieId" class="form-label font-weight-bold">Categorie</label>
+                            <select asp-for="CategorieId" class="form-control" asp-items="ViewBag.Categorii"></select>
+                            <span asp-validation-for="CategorieId" class="text-danger"></span>
+                        </div>
+
+                        <div class="mb-3">
+                            <label asp-for="OrasId" class="form-label font-weight-bold">Oraș</label>
+                            <select asp-for="OrasId" class="form-control" asp-items="ViewBag.Orase"></select>
+                            <span asp-validation-for="OrasId" class="text-danger"></span>
+                        </div>
+
+                        <div class="d-grid gap-2 mt-4">
+                            <button type="submit" class="btn btn-success btn-lg">Salvează Firma</button>
+                            <a asp-action="Index" class="btn btn-outline-secondary">Înapoi la Listă</a>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    @{await Html.RenderPartialAsync("_ValidationScriptsPartial");}
+}

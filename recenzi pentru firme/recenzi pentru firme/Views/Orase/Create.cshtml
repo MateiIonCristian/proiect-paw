@@ -1,0 +1,41 @@
+@*
+    DESCRIERE:
+    Vizualizare destinată creării unui nou oraș în platformă (Create).
+    Contine un formular securizat, cu validare pe partea de client pentru introducerea numelui orașului.
+*@
+
+@model recenzi_pentru_firme.Models.Oras
+
+@{
+    ViewData["Title"] = "Adaugă Oraș";
+}
+
+<div class="container mt-4">
+    <div class="row justify-content-center">
+        <div class="col-md-5">
+            <div class="card shadow-sm border-0">
+                <div class="card-header bg-success text-white py-3">
+                    <h4 class="mb-0"><i class="fas fa-plus-circle me-2"></i>Adaugă Oraș Nou</h4>
+                </div>
+                <div class="card-body p-4">
+                    <form asp-action="Create">
+                        <div asp-validation-summary="ModelOnly" class="text-danger mb-3"></div>
+                        <div class="mb-3">
+                            <label asp-for="Nume" class="form-label fw-bold">Numele Orașului</label>
+                            <input asp-for="Nume" class="form-control" placeholder="Ex: București" />
+                            <span asp-validation-for="Nume" class="text-danger"></span>
+                        </div>
+                        <div class="d-grid gap-2">
+                            <button type="submit" class="btn btn-success">Salvează</button>
+                            <a asp-action="Index" class="btn btn-outline-secondary">Înapoi</a>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    @{await Html.RenderPartialAsync("_ValidationScriptsPartial");}
+}

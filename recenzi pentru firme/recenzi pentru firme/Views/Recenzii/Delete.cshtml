@@ -1,0 +1,15 @@
+@*
+    DESCRIERE:
+    Vizualizare de confirmare pentru ștergerea (Delete) unei recenzii din platformă.
+    Prezintă o pagină simplă pentru confirmarea eliminării evaluării scrise de utilizatorul respectiv.
+*@
+
+@model recenzi_pentru_firme.Models.Recenzie
+<div class="container mt-4 text-center">
+    <h2 class="text-danger">Ștergi recenzia lui @Model.Autor?</h2>
+    <form asp-action="Delete">
+        <input type="hidden" asp-for="Id" />
+        <button type="submit" class="btn btn-danger">Confirmă Ștergerea</button>
+        <a asp-action="Index" class="btn btn-secondary">Anulează</a>
+    </form>
+</div>

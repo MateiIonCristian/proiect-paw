@@ -1,0 +1,126 @@
+@*
+    DESCRIERE:
+    Pagina de vizualizare a listei complete de firme (Index).
+    Integrează o funcționalitate de căutare dinamică bazată pe AJAX care actualizează instantaneu rezultatele în interfață,
+    afișând detalii despre categorie, adresă și acțiuni corespunzătoare nivelului de autorizare al utilizatorului.
+*@
+
+@model IEnumerable<recenzi_pentru_firme.Models.Firma>
+
+@{
+    ViewData["Title"] = "Lista Firme";
+}
+
+<div class="container mt-4">
+    <div class="row mb-4 align-items-center">
+        <div class="col-md-6">
+            <h1 class="fw-bold"><i class="fas fa-building text-primary me-2"></i>Toate Firmele</h1>
+            <p class="text-muted">Gestionează firmele înregistrate în platformă.</p>
+        </div>
+        <div class="col-md-6 text-md-end">
+            <input type="text" id="searchInput" class="form-control d-inline-block shadow-sm mb-2" placeholder="Căutare rapidă (AJAX)..." style="width: 250px;" />
+            @if (User.IsInRole("Administrator"))
+            {
+                <a asp-action="Create" class="btn btn-primary btn-lg shadow-sm ms-2">
+                    <i class="fas fa-plus-circle me-1"></i>Firmă Nouă
+                </a>
+            }
+        </div>
+    </div>
+
+    <div class="row" id="firmeContainer">
+        @if (Model != null && Model.Any())
+        {
+            @foreach (var firma in Model)
+            {
+                <div class="col-md-4 mb-4">
+                    <div class="card h-100 shadow-sm border-0">
+                        <div class="card-body">
+                            <div class="d-flex justify-content-between align-items-start mb-3">
+                                <h5 class="card-title fw-bold text-dark mb-0">@firma.Nume</h5>
+                                <span class="badge bg-info text-white">@firma.Categorie?.Nume</span>
+                            </div>
+                            <p class="card-text text-muted small" style="min-height: 50px;">
+                                @(firma.Descriere?.Length > 100 ? firma.Descriere.Substring(0, 97) + "..." : firma.Descriere)
+                            </p>
+                            <div class="border-top pt-3 mt-3">
+                                <p class="card-text small mb-1">
+                                    <i class="fas fa-map-marker-alt text-danger me-2"></i>@firma.Adresa
+                                </p>
+                                <p class="card-text small mb-3">
+                                    <i class="fas fa-city text-secondary me-2"></i>@(firma.Oras?.Nume ?? "Nespecificat")
+                                </p>
+                                <div class="d-flex gap-2 mt-2">
+                                    <a asp-action="Details" asp-route-id="@firma.Id" class="btn btn-sm btn-outline-info flex-grow-1">
+                                        <i class="fas fa-info-circle me-1"></i>Detalii
+                                    </a>
+                                    @if (User.IsInRole("Administrator"))
+                                    {
+                                        <a asp-action="Edit" asp-route-id="@firma.Id" class="btn btn-sm btn-outline-warning flex-grow-1">
+                                            <i class="fas fa-edit me-1"></i>Editează
+                                        </a>
+                                        <a asp-action="Delete" asp-route-id="@firma.Id" class="btn btn-sm btn-outline-danger flex-grow-1">
+                                            <i class="fas fa-trash me-1"></i>Șterge
+                                        </a>
+                                    }
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            }
+        }
+        else
+        {
+            <div class="col-12 text-center py-5">
+                <i class="fas fa-search fa-3x text-muted mb-3"></i>
+                <p class="text-muted">Nu am găsit nicio firmă. Adaugă una folosind butonul de mai sus!</p>
+            </div>
+        }
+    </div>
+</div>
+
+@section Scripts {
+    <script>
+        $(document).ready(function () {
+            var isAdmin = @User.IsInRole("Administrator").ToString().ToLower();
+            $("#searchInput").on("keyup", function () {
+                var value = $(this).val();
+                $.ajax({
+                    url: "@Url.Action("Search", "Firme")",
+                    type: "GET",
+                    data: { term: value },
+                    success: function (data) {
+                        var container = $("#firmeContainer");
+                        container.empty();
+                        if (data.length > 0) {
+                            $.each(data, function (i, f) {
+                                container.append(`
+                                    <div class="col-md-4 mb-4">
+                                        <div class="card h-100 shadow-sm border-0">
+                                            <div class="card-body">
+                                                <h5 class="card-title fw-bold text-dark mb-3">${f.nume}</h5>
+                                                <p class="card-text text-muted small" style="min-height: 50px;">${f.descriere || ''}</p>
+                                                <div class="border-top pt-3 mt-3">
+                                                    <p class="card-text small mb-3"><i class="fas fa-map-marker-alt text-danger me-2"></i>${f.adresa}</p>
+                                                    <div class="d-flex gap-2 mt-2">
+                                                        <a href="/Firme/Details/${f.id}" class="btn btn-sm btn-outline-info flex-grow-1">Detalii</a>
+                                                        ${isAdmin ? `
+                                                            <a href="/Firme/Edit/${f.id}" class="btn btn-sm btn-outline-warning flex-grow-1">Editează</a>
+                                                            <a href="/Firme/Delete/${f.id}" class="btn btn-sm btn-outline-danger flex-grow-1">Șterge</a>
+                                                        ` : ''}
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>`);
+                            });
+                        } else {
+                            container.append('<div class="col-12 text-center py-5"><p class="text-muted">Fără rezultate.</p></div>');
+                        }
+                    }
+                });
+            });
+        });
+    </script>
+}

@@ -1,0 +1,243 @@
+================================================================================
+TASK 2: DEVELOP A USER LOGIN FEATURE
+================================================================================
+
+Acest fisier contine toate componentele necesare pentru implementarea functionalitatii de Autentificare Utilizator (User Login) in ASP.NET Core MVC cu ASP.NET Core Identity.
+
+Modificarile includ validari riguroase pe client/server, protectie avansata impotriva Open Redirect (Redirectionare Deschisa) prin utilizarea "Url.IsLocalUrl" si tratarea detaliata a scenariilor de eroare (cont blocat, cont neaprobat, date gresite) pentru o experienta premium si securizata.
+
+--------------------------------------------------------------------------------
+1. VIEW MODEL: Models/ViewModels/LoginViewModel.cs
+--------------------------------------------------------------------------------
+using System.ComponentModel.DataAnnotations;
+
+namespace recenzi_pentru_firme.Models.ViewModels
+{
+    public class LoginViewModel
+    {
+        [Required(ErrorMessage = "Email-ul este obligatoriu.")]
+        [EmailAddress(ErrorMessage = "Email invalid.")]
+        public string Email { get; set; } = string.Empty;
+
+        [Required(ErrorMessage = "Parola este obligatorie.")]
+        [DataType(DataType.Password)]
+        public string Password { get; set; } = string.Empty;
+
+        [Display(Name = "Tine-ma minte")]
+        public bool RememberMe { get; set; }
+    }
+}
+
+
+--------------------------------------------------------------------------------
+2. SERVICE INTERFACE: Services/IAuthService.cs
+--------------------------------------------------------------------------------
+using Microsoft.AspNetCore.Identity;
+using recenzi_pentru_firme.Models.ViewModels;
+
+namespace recenzi_pentru_firme.Services
+{
+    public interface IAuthService
+    {
+        Task<SignInResult> LoginAsync(LoginViewModel model);
+        Task<IdentityResult> RegisterAsync(RegisterViewModel model);
+        Task LogoutAsync();
+    }
+}
+
+
+--------------------------------------------------------------------------------
+3. SERVICE IMPLEMENTATION: Services/AuthService.cs
+--------------------------------------------------------------------------------
+using Microsoft.AspNetCore.Identity;
+using recenzi_pentru_firme.Models;
+using recenzi_pentru_firme.Models.ViewModels;
+
+namespace recenzi_pentru_firme.Services
+{
+    public class AuthService : IAuthService
+    {
+        private readonly UserManager<ApplicationUser> _userManager;
+        private readonly SignInManager<ApplicationUser> _signInManager;
+
+        public AuthService(UserManager<ApplicationUser> userManager, SignInManager<ApplicationUser> signInManager)
+        {
+            _userManager = userManager;
+            _signInManager = signInManager;
+        }
+
+        public async Task<SignInResult> LoginAsync(LoginViewModel model)
+        {
+            // Rulam autentificarea securizata prin PasswordSignInAsync
+            return await _signInManager.PasswordSignInAsync(model.Email, model.Password, model.RememberMe, lockoutOnFailure: false);
+        }
+
+        public async Task<IdentityResult> RegisterAsync(RegisterViewModel model)
+        {
+            byte[]? profilePictureBytes = null;
+            if (model.ProfilePictureFile != null && model.ProfilePictureFile.Length > 0)
+            {
+                using (var memoryStream = new MemoryStream())
+                {
+                    await model.ProfilePictureFile.CopyToAsync(memoryStream);
+                    profilePictureBytes = memoryStream.ToArray();
+                }
+            }
+
+            var user = new ApplicationUser
+            {
+                UserName = model.Email,
+                Email = model.Email,
+                ProfilePicture = profilePictureBytes
+            };
+
+            var result = await _userManager.CreateAsync(user, model.Password);
+
+            if (result.Succeeded)
+            {
+                await _userManager.AddToRoleAsync(user, "User");
+                await _signInManager.SignInAsync(user, isPersistent: false);
+            }
+
+            return result;
+        }
+
+        public async Task LogoutAsync()
+        {
+            await _signInManager.SignOutAsync();
+        }
+    }
+}
+
+
+--------------------------------------------------------------------------------
+4. CONTROLLER (Cu protectie Open Redirect si mesaje explicite): Controllers/AccountController.cs
+--------------------------------------------------------------------------------
+using Microsoft.AspNetCore.Mvc;
+using recenzi_pentru_firme.Models.ViewModels;
+using recenzi_pentru_firme.Services;
+using System.IO;
+using System.Linq;
+
+namespace recenzi_pentru_firme.Controllers
+{
+    public class AccountController : Controller
+    {
+        private readonly IAuthService _authService;
+
+        public AccountController(IAuthService authService)
+        {
+            _authService = authService;
+        }
+
+        [HttpGet]
+        public IActionResult Login(string returnUrl = null)
+        {
+            ViewData["ReturnUrl"] = returnUrl;
+            return View();
+        }
+
+        [HttpPost]
+        public async Task<IActionResult> Login(LoginViewModel model, string returnUrl = null)
+        {
+            ViewData["ReturnUrl"] = returnUrl;
+
+            if (ModelState.IsValid)
+            {
+                var result = await _authService.LoginAsync(model);
+
+                if (result.Succeeded)
+                {
+                    // Prevenim Open Redirect Vulnerability verificand ca url-ul de redirectionare este local
+                    if (!string.IsNullOrEmpty(returnUrl) && Url.IsLocalUrl(returnUrl))
+                    {
+                        return Redirect(returnUrl);
+                    }
+                    else
+                    {
+                        return RedirectToAction("Index", "Home");
+                    }
+                }
+
+                // Gestiunea cazurilor specifice de eroare pentru securitate avansata
+                if (result.IsLockedOut)
+                {
+                    ModelState.AddModelError(string.Empty, "Contul este blocat temporar din cauza incercarilor esuate repetate.");
+                }
+                else if (result.IsNotAllowed)
+                {
+                    ModelState.AddModelError(string.Empty, "Autentificarea nu este permisa pentru acest cont (ex: e-mail neconfirmat).");
+                }
+                else
+                {
+                    ModelState.AddModelError(string.Empty, "Adresa de e-mail sau parola incorecta.");
+                }
+            }
+
+            return View(model);
+        }
+
+        [HttpPost]
+        public async Task<IActionResult> Logout()
+        {
+            await _authService.LogoutAsync();
+            return RedirectToAction("Index", "Home");
+        }
+    }
+}
+
+
+--------------------------------------------------------------------------------
+5. RAZOR VIEW: Views/Account/Login.cshtml
+--------------------------------------------------------------------------------
+@model recenzi_pentru_firme.Models.ViewModels.LoginViewModel
+
+@{
+    ViewData["Title"] = "Autentificare";
+}
+
+<div class="row justify-content-center align-items-center mt-5">
+    <div class="col-md-6 col-lg-4 animate-fade-up">
+        <div class="card card-premium shadow-lg border-0 overflow-hidden">
+            <div class="bg-gradient-premium py-5 text-center text-white" style="background: linear-gradient(135deg, #4f46e5, #7c3aed);">
+                <i class="fas fa-user-circle fa-4x mb-3"></i>
+                <h3 class="fw-bold mb-0">@ViewData["Title"]</h3>
+            </div>
+            <div class="card-body p-4 p-lg-5">
+                <form asp-controller="Account" asp-action="Login" asp-route-returnUrl='@ViewData["ReturnUrl"]' method="post">
+                    <div asp-validation-summary="ModelOnly" class="text-danger mb-3"></div>
+
+                    <div class="mb-4">
+                        <label asp-for="Email" class="form-label fw-bold">Adresa de Email</label>
+                        <input asp-for="Email" class="form-control form-control-premium" placeholder="nume@exemplu.com" />
+                        <span asp-validation-for="Email" class="text-danger"></span>
+                    </div>
+
+                    <div class="mb-4">
+                        <label asp-for="Password" class="form-label fw-bold">Parola</label>
+                        <input asp-for="Password" type="password" class="form-control form-control-premium" placeholder="••••••••" />
+                        <span asp-validation-for="Password" class="text-danger"></span>
+                    </div>
+
+                    <div class="form-check mb-4">
+                        <input class="form-check-input" asp-for="RememberMe" />
+                        <label class="form-check-label text-muted" asp-for="RememberMe">
+                            @Html.DisplayNameFor(m => m.RememberMe)
+                        </label>
+                    </div>
+
+                    <div class="d-grid gap-2">
+                        <button type="submit" class="btn btn-premium btn-lg">Autentificare</button>
+                    </div>
+                </form>
+            </div>
+            <div class="card-footer text-center py-4 bg-light border-0">
+                <div class="small text-muted">Nu ai un cont? <a asp-action="Register" class="text-primary fw-bold text-decoration-none">Inregistreaza-te!</a></div>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    @{await Html.RenderPartialAsync("_ValidationScriptsPartial");}
+}

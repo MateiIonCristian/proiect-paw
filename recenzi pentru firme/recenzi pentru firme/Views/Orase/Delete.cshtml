@@ -1,0 +1,35 @@
+@*
+    DESCRIERE:
+    Vizualizare de confirmare pentru ștergerea (Delete) unui oraș din platformă.
+    Afișează un avertisment cu privire la caracterul ireversibil al operațiunii înainte de trimiterea cererii de ștergere definitivă.
+*@
+
+@model recenzi_pentru_firme.Models.Oras
+
+@{
+    ViewData["Title"] = "Șterge Oraș";
+}
+
+<div class="container mt-4">
+    <div class="row justify-content-center">
+        <div class="col-md-5">
+            <div class="card shadow-sm border-0">
+                <div class="card-header bg-danger text-white py-3">
+                    <h4 class="mb-0"><i class="fas fa-exclamation-triangle me-2"></i>Confirmă Ștergerea</h4>
+                </div>
+                <div class="card-body p-4 text-center">
+                    <p class="lead">Ești sigur că vrei să ștergi orașul <strong>@Model.Nume</strong>?</p>
+                    <p class="text-danger small">Această acțiune este ireversibilă!</p>
+                    
+                    <form asp-action="Delete">
+                        <input type="hidden" asp-for="Id" />
+                        <div class="d-grid gap-2 mt-4">
+                            <button type="submit" class="btn btn-danger btn-lg">Da, Șterge</button>
+                            <a asp-action="Index" class="btn btn-outline-secondary">Anulează</a>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>

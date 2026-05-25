@@ -1,0 +1,69 @@
+@*
+    DESCRIERE:
+    Pagina de profil a utilizatorului autentificat (Profil).
+    Afișează detaliile contului curent, inclusiv poza de profil stocată ca byte array, numele, email-ul, rolul din sistem și acțiunile de editare sau deconectare.
+*@
+
+@using Microsoft.AspNetCore.Identity
+@inject UserManager<recenzi_pentru_firme.Models.ApplicationUser> UserManager
+@inject SignInManager<recenzi_pentru_firme.Models.ApplicationUser> SignInManager
+@{
+    ViewData["Title"] = "Profil Utilizator";
+    var user = await UserManager.GetUserAsync(User);
+}
+
+<div class="container mt-5">
+    <div class="row justify-content-center">
+        <div class="col-md-8">
+            <div class="card shadow border-0 overflow-hidden">
+                <div class="bg-primary p-5 text-center text-white">
+                    <div class="rounded-circle bg-white d-inline-flex align-items-center justify-content-center p-3 mb-3 shadow-sm" style="width: 120px; height: 120px; overflow: hidden; margin: 0 auto;">
+                        @if (user?.ProfilePicture != null)
+                        {
+                            <img style="width:100px; height:100px; object-fit:cover; border-radius:50%;" src="data:image/*;base64,@(Convert.ToBase64String(user.ProfilePicture))" alt="Profile Picture">
+                        }
+                        else
+                        {
+                            <i class="fas fa-user fa-4x text-primary"></i>
+                        }
+                    </div>
+                    <h2 class="fw-bold">@(user != null ? user.UserName : "Vizitator")</h2>
+                    <p class="opacity-75 mb-0">@(user != null ? user.Email : "Nespecificat")</p>
+                </div>
+                <div class="card-body p-4">
+                    <div class="row text-center mb-4">
+                        <div class="col-4 border-end">
+                            <h4 class="fw-bold text-primary">12</h4>
+                            <small class="text-muted text-uppercase">Firme Adăugate</small>
+                        </div>
+                        <div class="col-4 border-end">
+                            <h4 class="fw-bold text-primary">45</h4>
+                            <small class="text-muted text-uppercase">Recenzii Scrise</small>
+                        </div>
+                        <div class="col-4">
+                            <h4 class="fw-bold text-primary">@(User.Identity.IsAuthenticated ? (User.IsInRole("Administrator") ? "Admin" : "Membru") : "Vizitator")</h4>
+                            <small class="text-muted text-uppercase">Rol Sistem</small>
+                        </div>
+                    </div>
+                    
+                    <h5 class="fw-bold border-bottom pb-2 mb-3">Informații Cont</h5>
+                    <div class="row mb-2">
+                        <div class="col-sm-4 text-muted small">Membru din:</div>
+                        <div class="col-sm-8 fw-bold small">Ianuarie 2026</div>
+                    </div>
+                    <div class="row mb-4">
+                        <div class="col-sm-4 text-muted small">Ultima Logare:</div>
+                        <div class="col-sm-8 fw-bold small">Astăzi, ora 14:30</div>
+                    </div>
+                    
+                    <div class="d-flex gap-2">
+                        <a class="btn btn-primary flex-grow-1 animate-fade-up" asp-controller="Account" asp-action="EditProfil">Editează Profil</a>
+                        <form class="flex-grow-1" asp-controller="Account" asp-action="Logout" method="post">
+                            <button type="submit" class="btn btn-outline-danger w-100">Deconectare</button>
+                        </form>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>

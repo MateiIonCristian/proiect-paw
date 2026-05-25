@@ -1,0 +1,285 @@
+================================================================================
+TASK 4: CREATE PROFILE IMAGE UPLOAD AND MANAGEMENT FUNCTIONALITY
+================================================================================
+
+Acest fisier contine toate componentele necesare pentru implementarea functionalitatii de Incarcare si Administrare a Imaginii de Profil (Profile Image Upload and Management) in ASP.NET Core MVC cu ASP.NET Core Identity.
+
+Sistemul permite utilizatorilor autentificati sa:
+1. Vizualizeze imaginea lor de profil curenta (sau pictograma default).
+2. Incarce o noua imagine de profil cu validari stricte de securitate (max 2 MB, extensii permise, MIME type corect).
+3. Stearga/elimine poza curenta de profil.
+4. Afiseze corect poza dinamica in toate paginile (profil, bara de navigare).
+
+--------------------------------------------------------------------------------
+1. VIEW MODEL: Models/ViewModels/EditProfileViewModel.cs
+--------------------------------------------------------------------------------
+using Microsoft.AspNetCore.Http;
+using System.ComponentModel.DataAnnotations;
+
+namespace recenzi_pentru_firme.Models.ViewModels
+{
+    public class EditProfileViewModel
+    {
+        public string? Email { get; set; }
+
+        [Display(Name = "Poza de profil noua")]
+        public IFormFile? NewProfilePictureFile { get; set; }
+
+        [Display(Name = "Sterge poza de profil curenta")]
+        public bool RemoveCurrentPicture { get; set; }
+        
+        public byte[]? CurrentProfilePicture { get; set; }
+    }
+}
+
+
+--------------------------------------------------------------------------------
+2. SERVICE INTERFACE: Services/IAuthService.cs
+--------------------------------------------------------------------------------
+using Microsoft.AspNetCore.Identity;
+using recenzi_pentru_firme.Models.ViewModels;
+
+namespace recenzi_pentru_firme.Services
+{
+    public interface IAuthService
+    {
+        Task<SignInResult> LoginAsync(LoginViewModel model);
+        Task<IdentityResult> RegisterAsync(RegisterViewModel model);
+        Task<IdentityResult> UpdateProfilePictureAsync(string userId, EditProfileViewModel model);
+        Task LogoutAsync();
+    }
+}
+
+
+--------------------------------------------------------------------------------
+3. SERVICE IMPLEMENTATION: Services/AuthService.cs
+--------------------------------------------------------------------------------
+using Microsoft.AspNetCore.Identity;
+using recenzi_pentru_firme.Models;
+using recenzi_pentru_firme.Models.ViewModels;
+
+namespace recenzi_pentru_firme.Services
+{
+    public class AuthService : IAuthService
+    {
+        private readonly UserManager<ApplicationUser> _userManager;
+        private readonly SignInManager<ApplicationUser> _signInManager;
+
+        public AuthService(UserManager<ApplicationUser> userManager, SignInManager<ApplicationUser> signInManager)
+        {
+            _userManager = userManager;
+            _signInManager = signInManager;
+        }
+
+        public async Task<IdentityResult> UpdateProfilePictureAsync(string userId, EditProfileViewModel model)
+        {
+            var user = await _userManager.FindByIdAsync(userId);
+            if (user == null)
+                return IdentityResult.Failed(new IdentityError { Description = "Utilizatorul nu a fost gasit." });
+
+            if (model.RemoveCurrentPicture)
+            {
+                user.ProfilePicture = null;
+            }
+            else if (model.NewProfilePictureFile != null && model.NewProfilePictureFile.Length > 0)
+            {
+                using (var memoryStream = new MemoryStream())
+                {
+                    await model.NewProfilePictureFile.CopyToAsync(memoryStream);
+                    user.ProfilePicture = memoryStream.ToArray();
+                }
+            }
+
+            var result = await _userManager.UpdateAsync(user);
+            if (result.Succeeded)
+            {
+                // Re-autentificam userul pentru a reimprospata cookie-ul/claims cu noua poza
+                await _signInManager.RefreshSignInAsync(user);
+            }
+            return result;
+        }
+
+        // ... Metodele RegisterAsync, LoginAsync si LogoutAsync raman neschimbate ...
+    }
+}
+
+
+--------------------------------------------------------------------------------
+4. CONTROLLER (GET / POST EditProfil): Controllers/AccountController.cs
+--------------------------------------------------------------------------------
+using Microsoft.AspNetCore.Mvc;
+using recenzi_pentru_firme.Models.ViewModels;
+using recenzi_pentru_firme.Services;
+using recenzi_pentru_firme.Models;
+using Microsoft.AspNetCore.Identity;
+using Microsoft.AspNetCore.Authorization;
+using System.IO;
+using System.Linq;
+
+namespace recenzi_pentru_firme.Controllers
+{
+    public class AccountController : Controller
+    {
+        private readonly IAuthService _authService;
+        private readonly UserManager<ApplicationUser> _userManager;
+
+        public AccountController(IAuthService authService, UserManager<ApplicationUser> userManager)
+        {
+            _authService = authService;
+            _userManager = userManager;
+        }
+
+        [HttpGet]
+        [Authorize]
+        public async Task<IActionResult> EditProfil()
+        {
+            var user = await _userManager.GetUserAsync(User);
+            if (user == null) return Challenge();
+
+            var model = new EditProfileViewModel
+            {
+                Email = user.Email,
+                CurrentProfilePicture = user.ProfilePicture
+            };
+
+            return View(model);
+        }
+
+        [HttpPost]
+        [Authorize]
+        [ValidateAntiForgeryToken]
+        public async Task<IActionResult> EditProfil(EditProfileViewModel model)
+        {
+            var user = await _userManager.GetUserAsync(User);
+            if (user == null) return Challenge();
+
+            if (model.NewProfilePictureFile != null)
+            {
+                // 1. Validare dimensiune fisier (max 2 MB)
+                if (model.NewProfilePictureFile.Length > 2 * 1024 * 1024)
+                {
+                    ModelState.AddModelError("NewProfilePictureFile", "Poza de profil nu poate depasi 2 MB.");
+                }
+
+                // 2. Validare extensie fisier
+                var allowedExtensions = new[] { ".jpg", ".jpeg", ".png", ".gif" };
+                var extension = Path.GetExtension(model.NewProfilePictureFile.FileName)?.ToLower();
+                if (string.IsNullOrEmpty(extension) || !allowedExtensions.Contains(extension))
+                {
+                    ModelState.AddModelError("NewProfilePictureFile", "Sunt permise doar imagini (.jpg, .jpeg, .png, .gif).");
+                }
+
+                // 3. Validare MIME type
+                if (!model.NewProfilePictureFile.ContentType.StartsWith("image/"))
+                {
+                    ModelState.AddModelError("NewProfilePictureFile", "Fisierul incarcat trebuie sa fie o imagine valida.");
+                }
+            }
+
+            if (ModelState.IsValid)
+            {
+                var result = await _authService.UpdateProfilePictureAsync(user.Id, model);
+                if (result.Succeeded)
+                {
+                    TempData["SuccessMessage"] = "Profilul a fost actualizat cu succes!";
+                    return RedirectToAction("Profil", "Home");
+                }
+
+                foreach (var error in result.Errors)
+                {
+                    ModelState.AddModelError(string.Empty, error.Description);
+                }
+            }
+
+            model.CurrentProfilePicture = user.ProfilePicture;
+            return View(model);
+        }
+    }
+}
+
+
+--------------------------------------------------------------------------------
+5. RAZOR VIEW PENTRU EDITARE PROFIL: Views/Account/EditProfil.cshtml
+--------------------------------------------------------------------------------
+@model recenzi_pentru_firme.Models.ViewModels.EditProfileViewModel
+
+@{
+    ViewData["Title"] = "Administrare Profil";
+}
+
+<div class="row justify-content-center align-items-center mt-5 mb-5">
+    <div class="col-md-8 col-lg-6 animate-fade-up">
+        <div class="card card-premium shadow-lg border-0 overflow-hidden">
+            <div class="py-5 text-center text-white" style="background: linear-gradient(135deg, #6366f1, #4f46e5);">
+                <i class="fas fa-user-cog fa-4x mb-3"></i>
+                <h3 class="fw-bold mb-0">Editeaza Profilul Tau</h3>
+                <p class="small opacity-75 mt-2">Gestioneaza imaginea de profil si datele contului</p>
+            </div>
+            <div class="card-body p-4 p-lg-5">
+                <form asp-controller="Account" asp-action="EditProfil" method="post" enctype="multipart/form-data">
+                    <div asp-validation-summary="ModelOnly" class="text-danger mb-3"></div>
+
+                    <div class="text-center mb-4">
+                        <label class="form-label d-block fw-bold mb-3">Imaginea de profil curenta</label>
+                        <div class="rounded-circle bg-light d-inline-flex align-items-center justify-content-center p-3 mb-3 shadow-sm" style="width: 150px; height: 150px; overflow: hidden; margin: 0 auto; border: 3px solid #6366f1;">
+                            @if (Model.CurrentProfilePicture != null)
+                            {
+                                <img style="width:130px; height:130px; object-fit:cover; border-radius:50%;" src="data:image/*;base64,@(Convert.ToBase64String(Model.CurrentProfilePicture))" alt="Profile Picture">
+                            }
+                            else
+                            {
+                                <i class="fas fa-user fa-5x text-secondary"></i>
+                            }
+                        </div>
+                    </div>
+
+                    <div class="mb-4">
+                        <label class="form-label fw-bold">Adresa de Email (Doar citire)</label>
+                        <input asp-for="Email" class="form-control form-control-premium bg-light" readonly />
+                    </div>
+
+                    <div class="mb-4">
+                        <label asp-for="NewProfilePictureFile" class="form-label fw-bold"><i class="fas fa-camera me-1"></i> Incarca o poza noua de profil</label>
+                        <input asp-for="NewProfilePictureFile" class="form-control form-control-premium" type="file" accept="image/*" />
+                        <span asp-validation-for="NewProfilePictureFile" class="text-danger"></span>
+                        <div class="form-text text-muted">Sunt permise doar fisiere imagine (.jpg, .jpeg, .png, .gif) de maxim 2 MB.</div>
+                    </div>
+
+                    @if (Model.CurrentProfilePicture != null)
+                    {
+                        <div class="form-check mb-4 bg-danger bg-opacity-10 p-3 rounded" style="padding-left: 2.5rem;">
+                            <input class="form-check-input" asp-for="RemoveCurrentPicture" id="removePicCheck" />
+                            <label class="form-check-label fw-bold text-danger" for="removePicCheck">
+                                <i class="fas fa-trash me-1"></i> Sterge poza de profil curenta
+                            </label>
+                        </div>
+                    }
+
+                    <div class="mt-4 d-flex gap-2">
+                        <button type="submit" class="btn btn-premium flex-grow-1" style="background: linear-gradient(135deg, #6366f1, #4f46e5);">Salveaza Modificarile</button>
+                        <a asp-controller="Home" asp-action="Profil" class="btn btn-outline-secondary px-4">Anuleaza</a>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    @{await Html.RenderPartialAsync("_ValidationScriptsPartial");}
+}
+
+
+--------------------------------------------------------------------------------
+6. INTEGRARE IN PAGINA DE PROFIL (Redirectionare): Views/Home/Profil.cshtml
+--------------------------------------------------------------------------------
+In interiorul paginii de profil, butonul "Editeaza Profil" a fost redirectionat din Identity Manager (care nu era configurat) direct la pagina noastra custom de management a pozei de profil:
+
+```html
+<div class="d-flex gap-2">
+    <a class="btn btn-primary flex-grow-1 animate-fade-up" asp-controller="Account" asp-action="EditProfil">Editează Profil</a>
+    <form class="flex-grow-1" asp-controller="Account" asp-action="Logout" method="post">
+        <button type="submit" class="btn btn-outline-danger w-100">Deconectare</button>
+    </form>
+</div>
+```

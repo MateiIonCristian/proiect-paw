@@ -1,0 +1,15 @@
+@*
+    DESCRIERE:
+    Vizualizare de confirmare pentru ștergerea (Delete) unei categorii.
+    Solicită permisiunea administratorului înainte de a șterge permanent categoria respectivă din baza de date.
+*@
+
+@model recenzi_pentru_firme.Models.Categorie
+<div class="container mt-4 text-center">
+    <h2 class="text-danger">Ștergi categoria @Model.Nume?</h2>
+    <form asp-action="Delete">
+        <input type="hidden" asp-for="Id" />
+        <button type="submit" class="btn btn-danger">Confirmă Ștergerea</button>
+        <a asp-action="Index" class="btn btn-secondary">Anulează</a>
+    </form>
+</div>

@@ -1,0 +1,27 @@
+@model Platforma.Models.Oras
+@{ ViewData["Title"] = "Editează Oraș"; }
+
+<div class="container my-5">
+    <div class="row justify-content-center">
+        <div class="col-md-6">
+            <div class="card shadow border-0">
+                <div class="card-body p-4">
+                    <h3 class="fw-bold mb-4">Editează Oraș</h3>
+                    <form asp-action="Edit">
+                        <div asp-validation-summary="ModelOnly" class="text-danger mb-3"></div>
+                        <input type="hidden" asp-for="Id" />
+                        <div class="form-floating mb-4">
+                            <input asp-for="Nume" class="form-control" placeholder="Nume Oraș" />
+                            <label asp-for="Nume">Nume Oraș</label>
+                            <span asp-validation-for="Nume" class="text-danger"></span>
+                        </div>
+                        <div class="d-flex gap-2">
+                            <button type="submit" class="btn btn-warning fw-bold px-4">Actualizează</button>
+                            <a asp-action="Index" class="btn btn-outline-secondary px-4">Anulează</a>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>

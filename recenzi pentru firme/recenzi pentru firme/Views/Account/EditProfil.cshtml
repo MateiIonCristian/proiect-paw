@@ -1,0 +1,73 @@
+@*
+    DESCRIERE:
+    Vizualizare destinată editării profilului de utilizator.
+    Permite vizualizarea imaginii curente, încărcarea unei imagini noi de profil (cu validare) sau ștergerea acesteia.
+*@
+
+@model recenzi_pentru_firme.Models.ViewModels.EditProfileViewModel
+
+@{
+    ViewData["Title"] = "Administrare Profil";
+}
+
+<div class="row justify-content-center align-items-center mt-5 mb-5">
+    <div class="col-md-8 col-lg-6 animate-fade-up">
+        <div class="card card-premium shadow-lg border-0 overflow-hidden">
+            <div class="py-5 text-center text-white" style="background: linear-gradient(135deg, #6366f1, #4f46e5);">
+                <i class="fas fa-user-cog fa-4x mb-3"></i>
+                <h3 class="fw-bold mb-0">Editează Profilul Tău</h3>
+                <p class="small opacity-75 mt-2">Gestionează imaginea de profil și datele contului</p>
+            </div>
+            <div class="card-body p-4 p-lg-5">
+                <form asp-controller="Account" asp-action="EditProfil" method="post" enctype="multipart/form-data">
+                    <div asp-validation-summary="ModelOnly" class="text-danger mb-3"></div>
+
+                    <div class="text-center mb-4">
+                        <label class="form-label d-block fw-bold mb-3">Imaginea de profil curentă</label>
+                        <div class="rounded-circle bg-light d-inline-flex align-items-center justify-content-center p-3 mb-3 shadow-sm" style="width: 150px; height: 150px; overflow: hidden; margin: 0 auto; border: 3px solid #6366f1;">
+                            @if (Model.CurrentProfilePicture != null)
+                            {
+                                <img style="width:130px; height:130px; object-fit:cover; border-radius:50%;" src="data:image/*;base64,@(Convert.ToBase64String(Model.CurrentProfilePicture))" alt="Profile Picture">
+                            }
+                            else
+                            {
+                                <i class="fas fa-user fa-5x text-secondary"></i>
+                            }
+                        </div>
+                    </div>
+
+                    <div class="mb-4">
+                        <label class="form-label fw-bold">Adresă de Email (Doar citire)</label>
+                        <input asp-for="Email" class="form-control form-control-premium bg-light" readonly />
+                    </div>
+
+                    <div class="mb-4">
+                        <label asp-for="NewProfilePictureFile" class="form-label fw-bold"><i class="fas fa-camera me-1"></i> Încarcă o poză nouă de profil</label>
+                        <input asp-for="NewProfilePictureFile" class="form-control form-control-premium" type="file" accept="image/*" />
+                        <span asp-validation-for="NewProfilePictureFile" class="text-danger"></span>
+                        <div class="form-text text-muted">Sunt permise doar fișiere imagine (.jpg, .jpeg, .png, .gif) de maxim 2 MB.</div>
+                    </div>
+
+                    @if (Model.CurrentProfilePicture != null)
+                    {
+                        <div class="form-check mb-4 bg-danger bg-opacity-10 p-3 rounded" style="padding-left: 2.5rem;">
+                            <input class="form-check-input" asp-for="RemoveCurrentPicture" id="removePicCheck" />
+                            <label class="form-check-label fw-bold text-danger" for="removePicCheck">
+                                <i class="fas fa-trash me-1"></i> Șterge poza de profil curentă
+                            </label>
+                        </div>
+                    }
+
+                    <div class="mt-4 d-flex gap-2">
+                        <button type="submit" class="btn btn-premium flex-grow-1" style="background: linear-gradient(135deg, #6366f1, #4f46e5);">Salvează Modificările</button>
+                        <a asp-controller="Home" asp-action="Profil" class="btn btn-outline-secondary px-4">Anulează</a>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    @{await Html.RenderPartialAsync("_ValidationScriptsPartial");}
+}

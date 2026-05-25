@@ -1,0 +1,57 @@
+@*
+    DESCRIERE:
+    Vizualizare pentru pagina de autentificare (Login) a aplicației.
+    Stilizează formularul de logare cu un design modern și include elemente interactive de validare a datelor.
+*@
+
+@model recenzi_pentru_firme.Models.ViewModels.LoginViewModel
+
+@{
+    ViewData["Title"] = "Autentificare";
+}
+
+<div class="row justify-content-center align-items-center mt-5">
+    <div class="col-md-6 col-lg-4 animate-fade-up">
+        <div class="card card-premium shadow-lg border-0 overflow-hidden">
+            <div class="bg-gradient-premium py-5 text-center text-white" style="background: linear-gradient(135deg, #4f46e5, #7c3aed);">
+                <i class="fas fa-user-circle fa-4x mb-3"></i>
+                <h3 class="fw-bold mb-0">@ViewData["Title"]</h3>
+            </div>
+            <div class="card-body p-4 p-lg-5">
+                <form asp-controller="Account" asp-action="Login" asp-route-returnUrl='@ViewData["ReturnUrl"]' method="post">
+                    <div asp-validation-summary="ModelOnly" class="text-danger mb-3"></div>
+
+                    <div class="mb-4">
+                        <label asp-for="Email" class="form-label fw-bold">Adresă de Email</label>
+                        <input asp-for="Email" class="form-control form-control-premium" placeholder="nume@exemplu.com" />
+                        <span asp-validation-for="Email" class="text-danger"></span>
+                    </div>
+
+                    <div class="mb-4">
+                        <label asp-for="Password" class="form-label fw-bold">Parolă</label>
+                        <input asp-for="Password" type="password" class="form-control form-control-premium" placeholder="••••••••" />
+                        <span asp-validation-for="Password" class="text-danger"></span>
+                    </div>
+
+                    <div class="form-check mb-4">
+                        <input class="form-check-input" asp-for="RememberMe" />
+                        <label class="form-check-label text-muted" asp-for="RememberMe">
+                            @Html.DisplayNameFor(m => m.RememberMe)
+                        </label>
+                    </div>
+
+                    <div class="d-grid gap-2">
+                        <button type="submit" class="btn btn-premium btn-lg">Autentificare</button>
+                    </div>
+                </form>
+            </div>
+            <div class="card-footer text-center py-4 bg-light border-0">
+                <div class="small text-muted">Nu ai un cont? <a asp-action="Register" class="text-primary fw-bold text-decoration-none">Înregistrează-te!</a></div>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    @{await Html.RenderPartialAsync("_ValidationScriptsPartial");}
+}

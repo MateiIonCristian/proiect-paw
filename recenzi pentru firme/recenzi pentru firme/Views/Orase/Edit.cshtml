@@ -1,0 +1,42 @@
+@*
+    DESCRIERE:
+    Vizualizare destinată actualizării numelui unui oraș existent (Edit).
+    Încarcă orașul selectat și expune un câmp de intrare validat pentru salvarea modificărilor.
+*@
+
+@model recenzi_pentru_firme.Models.Oras
+
+@{
+    ViewData["Title"] = "Editează Oraș";
+}
+
+<div class="container mt-4">
+    <div class="row justify-content-center">
+        <div class="col-md-5">
+            <div class="card shadow-sm border-0">
+                <div class="card-header bg-warning text-dark py-3">
+                    <h4 class="mb-0"><i class="fas fa-edit me-2"></i>Editează Oraș</h4>
+                </div>
+                <div class="card-body p-4">
+                    <form asp-action="Edit">
+                        <input type="hidden" asp-for="Id" />
+                        <div asp-validation-summary="ModelOnly" class="text-danger mb-3"></div>
+                        <div class="mb-3">
+                            <label asp-for="Nume" class="form-label fw-bold">Numele Orașului</label>
+                            <input asp-for="Nume" class="form-control" />
+                            <span asp-validation-for="Nume" class="text-danger"></span>
+                        </div>
+                        <div class="d-grid gap-2">
+                            <button type="submit" class="btn btn-warning">Salvează Modificările</button>
+                            <a asp-action="Index" class="btn btn-outline-secondary">Înapoi</a>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    @{await Html.RenderPartialAsync("_ValidationScriptsPartial");}
+}

@@ -12,13 +12,17 @@ namespace Platforma.Controllers
         public FirmeController(ApplicationDbContext context) { _context = context; }
 
         public async Task<IActionResult> Index() {
-            var firme = await _context.Firme.Include(f => f.Recenzii).Include(f => f.Categorie).ToListAsync();
+            var firme = await _context.Firme.Include(f => f.Recenzii).Include(f => f.Categorie).Include(f => f.Oras).ToListAsync();
             return View(firme);
         }
 
         public async Task<IActionResult> Details(int? id) {
             if (id == null) return NotFound();
-            var firma = await _context.Firme.Include(f => f.Recenzii).Include(f => f.Categorie).FirstOrDefaultAsync(m => m.Id == id);
+            var firma = await _context.Firme
+                .Include(f => f.Recenzii)
+                .Include(f => f.Categorie)
+                .Include(f => f.Oras)
+                .FirstOrDefaultAsync(m => m.Id == id);
             if (firma == null) return NotFound();
             return View(firma);
         }
@@ -60,6 +64,8 @@ namespace Platforma.Controllers
                 await _context.SaveChangesAsync();
                 return RedirectToAction(nameof(Index));
             }
+            ViewBag.Categorii = new SelectList(await _context.Categorii.ToListAsync(), "Id", "Nume", firma.CategorieId);
+            ViewBag.Orase = new SelectList(await _context.Orase.ToListAsync(), "Id", "Nume", firma.OrasId);
             return View(firma);
         }
 

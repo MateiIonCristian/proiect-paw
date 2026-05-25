@@ -1,0 +1,49 @@
+@*
+    DESCRIERE:
+    Vizualizare destinată editării datelor unei firme (Edit).
+    Permite modificarea atributelor fundamentale precum Numele, Adresa, Descrierea, Categoria și Orașul asociat.
+*@
+
+@model recenzi_pentru_firme.Models.Firma
+@{ ViewData["Title"] = "Editează Firma"; }
+
+<div class="container mt-4">
+    <div class="row justify-content-center">
+        <div class="col-md-6">
+            <div class="card shadow">
+                <div class="card-body">
+                    <h2 class="card-title text-center mb-4">Editează Firma</h2>
+                    <form asp-action="Edit">
+                        <input type="hidden" asp-for="Id" />
+                        <div class="mb-3">
+                            <label asp-for="Nume" class="form-label">Nume</label>
+                            <input asp-for="Nume" class="form-control" />
+                        </div>
+                        <div class="mb-3">
+                            <label asp-for="Adresa" class="form-label">Adresă</label>
+                            <input asp-for="Adresa" class="form-control" />
+                        </div>
+                        <div class="mb-3">
+                            <label asp-for="Descriere" class="form-label">Descriere</label>
+                            <textarea asp-for="Descriere" class="form-control" rows="3"></textarea>
+                        </div>
+                        <div class="mb-3">
+                            <label asp-for="CategorieId" class="form-label">Categorie</label>
+                            <select asp-for="CategorieId" class="form-control" asp-items="ViewBag.Categorii"></select>
+                            <span asp-validation-for="CategorieId" class="text-danger"></span>
+                        </div>
+                        <div class="mb-3">
+                            <label asp-for="OrasId" class="form-label">Oraș</label>
+                            <select asp-for="OrasId" class="form-control" asp-items="ViewBag.Orase"></select>
+                            <span asp-validation-for="OrasId" class="text-danger"></span>
+                        </div>
+                        <div class="d-grid gap-2">
+                            <button type="submit" class="btn btn-warning">Salvează Modificările</button>
+                            <a asp-action="Index" class="btn btn-secondary">Anulează</a>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>

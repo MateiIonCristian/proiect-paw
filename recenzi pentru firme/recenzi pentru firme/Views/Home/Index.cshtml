@@ -1,0 +1,80 @@
+@*
+    DESCRIERE:
+    Pagina de pornire a aplicației (Home/Index).
+    Afișează banner-ul principal interactiv, statisticile generale dinamice (număr firme, recenzii) și statusul de autentificare/rol al utilizatorului curent.
+*@
+
+@using Microsoft.AspNetCore.Identity
+@inject UserManager<recenzi_pentru_firme.Models.ApplicationUser> UserManager
+@{
+    ViewData["Title"] = "Pagina Principală";
+    var user = await UserManager.GetUserAsync(User);
+}
+
+<div class="hero-gradient mb-5">
+    <div class="container text-center animate-fade-up">
+        <h1 class="display-3 fw-bold mb-3">Descoperă cele mai bune firme din oraș!</h1>
+        <p class="lead mb-5 opacity-75">Platforma ta de încredere pentru recenzii autentice și servicii de calitate.</p>
+        <div class="d-flex justify-content-center gap-3">
+            <a asp-controller="Firme" asp-action="Index" class="btn btn-light btn-lg px-5 py-3 fw-bold rounded-pill shadow">
+                Explorează Firmele
+            </a>
+            @if (User.IsInRole("Administrator"))
+            {
+                <a asp-controller="Firme" asp-action="Create" class="btn btn-outline-light btn-lg px-5 py-3 fw-bold rounded-pill">
+                    Adaugă Firmă
+                </a>
+            }
+        </div>
+    </div>
+</div>
+
+<div class="container mb-5">
+    <div class="row">
+        <div class="col-md-4 mb-4">
+            <div class="card card-premium h-100 border-0 p-4 animate-fade-up" style="animation-delay: 0.1s">
+                <div class="d-flex align-items-center mb-3">
+                    <div class="p-3 rounded-circle bg-primary bg-opacity-10 text-primary me-3">
+                        <i class="fas fa-building fa-2x"></i>
+                    </div>
+                    <div>
+                        <h3 class="fw-bold mb-0">@ViewBag.TotalFirme</h3>
+                        <p class="text-muted small mb-0 text-uppercase tracking-wider">Firme active</p>
+                    </div>
+                </div>
+                <p class="text-muted small">Mii de companii gata să îți ofere cele mai bune servicii.</p>
+                <a asp-controller="Firme" asp-action="Index" class="stretched-link"></a>
+            </div>
+        </div>
+        <div class="col-md-4 mb-4">
+            <div class="card card-premium h-100 border-0 p-4 animate-fade-up" style="animation-delay: 0.2s">
+                <div class="d-flex align-items-center mb-3">
+                    <div class="p-3 rounded-circle bg-warning bg-opacity-10 text-warning me-3">
+                        <i class="fas fa-star fa-2x"></i>
+                    </div>
+                    <div>
+                        <h3 class="fw-bold mb-0">@ViewBag.TotalRecenzii</h3>
+                        <p class="text-muted small mb-0 text-uppercase tracking-wider">Recenzii lăsate</p>
+                    </div>
+                </div>
+                <p class="text-muted small">Păreri reale de la clienți mulțumiți și experiențe împărtășite.</p>
+                <a asp-controller="Recenzii" asp-action="Index" class="stretched-link"></a>
+            </div>
+        </div>
+        <div class="col-md-4 mb-4">
+            <div class="card card-premium h-100 border-0 p-4 animate-fade-up" style="animation-delay: 0.3s">
+                <div class="d-flex align-items-center mb-3">
+                    <div class="p-3 rounded-circle bg-success bg-opacity-10 text-success me-3">
+                        <i class="fas fa-user-check fa-2x"></i>
+                    </div>
+                    <div>
+                        <h3 class="fw-bold mb-0">@(User.Identity.IsAuthenticated ? (User.IsInRole("Administrator") ? "Admin" : "Membru") : "Vizitator")</h3>
+                        <p class="text-muted small mb-0 text-uppercase tracking-wider">Statusul tău</p>
+                    </div>
+                </div>
+                <p class="text-muted small">Accesează funcțiile dedicate rolului tău în platformă.</p>
+                <a asp-area="Identity" asp-page="/Account/Manage/Index" class="stretched-link"></a>
+            </div>
+        </div>
+    </div>
+</div>

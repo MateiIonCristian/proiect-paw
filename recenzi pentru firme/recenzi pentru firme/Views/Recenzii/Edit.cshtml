@@ -1,0 +1,22 @@
+@*
+    DESCRIERE:
+    Vizualizare dedicată modificării (Edit) unei recenzii existente.
+    Permite editarea autorului, notei primite de firmă, conținutului textual și schimbarea asocierii cu firma selectată.
+*@
+
+@model recenzi_pentru_firme.Models.Recenzie
+<div class="container mt-4">
+    <h2>Editează Recenzie</h2>
+    <form asp-action="Edit">
+        <input type="hidden" asp-for="Id" />
+        <div class="mb-3"><label asp-for="Autor" class="form-label"></label><input asp-for="Autor" class="form-control" /></div>
+        <div class="mb-3"><label asp-for="Nota" class="form-label"></label><input asp-for="Nota" type="number" min="1" max="5" class="form-control" /></div>
+        <div class="mb-3"><label asp-for="Continut" class="form-label"></label><textarea asp-for="Continut" class="form-control"></textarea></div>
+        <div class="mb-3">
+            <label asp-for="FirmaId" class="form-label">Firmă</label>
+            <select asp-for="FirmaId" class="form-control" asp-items="ViewBag.Firme"></select>
+            <span asp-validation-for="FirmaId" class="text-danger"></span>
+        </div>
+        <button type="submit" class="btn btn-warning">Salvează</button>
+    </form>
+</div>

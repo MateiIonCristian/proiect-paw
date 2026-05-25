@@ -1,0 +1,24 @@
+@*
+    DESCRIERE:
+    Vizualizare de confirmare pentru ștergerea (Delete) unei firme.
+    Afișează un avertisment cu numele firmei înainte de a trimite cererea POST de ștergere definitivă din baza de date.
+*@
+
+@model recenzi_pentru_firme.Models.Firma
+@{ ViewData["Title"] = "Șterge Firma"; }
+
+<div class="container mt-4">
+    <div class="row justify-content-center">
+        <div class="col-md-6 text-center">
+            <div class="card shadow p-4 border-danger">
+                <h2 class="text-danger mb-4">Ești sigur?</h2>
+                <p>Urmează să ștergi firma: <strong>@Model.Nume</strong></p>
+                <form asp-action="Delete">
+                    <input type="hidden" asp-for="Id" />
+                    <button type="submit" class="btn btn-danger btn-lg me-2">Da, șterge!</button>
+                    <a asp-action="Index" class="btn btn-secondary btn-lg">Nu, înapoi</a>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>

@@ -1,0 +1,232 @@
+================================================================================
+TASK 3: INTEGRATE A ROLE-BASED AUTHORIZATION SYSTEM
+================================================================================
+
+Acest fisier contine toate detaliile si componentele necesare pentru implementarea sistemului de autorizare pe baza de roluri (Role-Based Authorization) in ASP.NET Core MVC cu ASP.NET Core Identity.
+
+Sistemul defineste doua roluri principale:
+1. "User" (Standard User) - poate citi datele si poate scrie recenzii pentru firme.
+2. "Administrator" - are drepturi depline de administrare (adaugare, editare si stergere firme, categorii, orase si recenzii).
+
+Restrictionarea accesului se face prin middleware-ul nativ si atributele "[Authorize]" si "[Authorize(Roles = "Administrator")]" aplicate pe controllere si actiuni.
+
+--------------------------------------------------------------------------------
+1. CONFIGURARE & INITIERE ROLURI SI ADMINISTRATOR: Program.cs
+--------------------------------------------------------------------------------
+Urmatorul extras din Program.cs arata cum sunt definite si create in mod automat cele doua roluri ("Administrator" si "User") la pornirea aplicatiei si cum este inregistrat utilizatorul de test (admin@test.com) in rolul de "Administrator".
+
+```csharp
+// Inregistrarea serviciilor Identity in builder
+builder.Services.AddIdentity<ApplicationUser, IdentityRole>(options => {
+    options.Password.RequireDigit = false;
+    options.Password.RequiredLength = 6;
+    options.Password.RequireNonAlphanumeric = false;
+    options.Password.RequireUppercase = false;
+    options.Password.RequireLowercase = false;
+})
+.AddEntityFrameworkStores<ApplicationDbContext>()
+.AddDefaultTokenProviders();
+
+...
+
+// Activarea middleware-ului de Autentificare si Autorizare
+app.UseAuthentication();
+app.UseAuthorization();
+
+...
+
+// Seeding automat de roluri si user admin
+using (var scope = app.Services.CreateScope())
+{
+    var services = scope.ServiceProvider;
+    var roleManager = services.GetRequiredService<RoleManager<IdentityRole>>();
+    var userManager = services.GetRequiredService<UserManager<ApplicationUser>>();
+
+    // 1. Crearea rolului de Administrator daca nu exista
+    if (!await roleManager.RoleExistsAsync("Administrator"))
+        await roleManager.CreateAsync(new IdentityRole("Administrator"));
+
+    // 2. Crearea rolului de User (Standard User) daca nu exista
+    if (!await roleManager.RoleExistsAsync("User"))
+        await roleManager.CreateAsync(new IdentityRole("User"));
+
+    // 3. Crearea si asocierea contului de Administrator
+    var adminUser = await userManager.FindByEmailAsync("admin@test.com");
+    if (adminUser == null)
+    {
+        adminUser = new ApplicationUser { UserName = "admin@test.com", Email = "admin@test.com" };
+        var result = await userManager.CreateAsync(adminUser, "admin123");
+        if (result.Succeeded)
+        {
+            await userManager.AddToRoleAsync(adminUser, "Administrator");
+        }
+    }
+    else
+    {
+        // Ne asiguram ca adminul are parola resetata la cea implicita pentru testare
+        var hasPassword = await userManager.HasPasswordAsync(adminUser);
+        if (hasPassword) await userManager.RemovePasswordAsync(adminUser);
+        await userManager.AddPasswordAsync(adminUser, "admin123");
+    }
+
+    // Fortam asignarea rolului in caz de migrare incompleta
+    if (adminUser != null && !await userManager.IsInRoleAsync(adminUser, "Administrator"))
+    {
+        await userManager.AddToRoleAsync(adminUser, "Administrator");
+    }
+}
+```
+
+
+--------------------------------------------------------------------------------
+2. CONTROLLER-UL DE FIRME (RESTRICTIONARE ACCES): Controllers/FirmeController.cs
+--------------------------------------------------------------------------------
+Acest controller utilizeaza "[Authorize]" la nivel de clasa (utilizatorul trebuie sa fie logat ca Standard User pentru a vizualiza firmele) si "[Authorize(Roles = "Administrator")]" la nivel de actiuni sensibile (doar un Administrator poate crea, edita sau sterge firme).
+
+```csharp
+using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.Authorization;
+using recenzi_pentru_firme.Models;
+using recenzi_pentru_firme.Services;
+
+namespace recenzi_pentru_firme.Controllers
+{
+    [Authorize] // Toti utilizatorii autentificati (Standard si Admin) pot accesa controllerul
+    public class FirmeController : Controller
+    {
+        // Actiuni permise oricarui utilizator logat (Standard User / Admin)
+        public async Task<IActionResult> Index() { ... }
+        public async Task<IActionResult> Details(int id) { ... }
+
+        // Actiune permisa DOAR utilizatorilor cu rolul de "Administrator"
+        [Authorize(Roles = "Administrator")]
+        public async Task<IActionResult> Create() { ... }
+
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        [Authorize(Roles = "Administrator")]
+        public async Task<IActionResult> Create(Firma firma) { ... }
+
+        [Authorize(Roles = "Administrator")]
+        public async Task<IActionResult> Edit(int id) { ... }
+
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        [Authorize(Roles = "Administrator")]
+        public async Task<IActionResult> Edit(int id, Firma firma) { ... }
+
+        [Authorize(Roles = "Administrator")]
+        public async Task<IActionResult> Delete(int id) { ... }
+
+        [HttpPost, ActionName("Delete")]
+        [ValidateAntiForgeryToken]
+        [Authorize(Roles = "Administrator")]
+        public async Task<IActionResult> DeleteConfirmed(int id) { ... }
+    }
+}
+```
+
+
+--------------------------------------------------------------------------------
+3. CONTROLLER-UL DE RECENZII (DREPTURI DIFERITE): Controllers/RecenziiController.cs
+--------------------------------------------------------------------------------
+In cadrul recenziilor, rolurile au drepturi asimetrice clare:
+- Orice utilizator autentificat (Standard si Admin) are permisiunea de a crea o recenzie noua (`Create`).
+- Doar un utilizator cu rolul de "Administrator" are permisiunea de a edita (`Edit`) sau sterge (`Delete`) o recenzie existenta.
+
+```csharp
+using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.Authorization;
+using recenzi_pentru_firme.Models;
+using recenzi_pentru_firme.Services;
+
+namespace recenzi_pentru_firme.Controllers
+{
+    [Authorize] // Utilizatorul trebuie sa fie cel putin autentificat
+    public class RecenziiController : Controller
+    {
+        public async Task<IActionResult> Index() { ... }
+
+        // Standard User & Administrator pot crea recenzii
+        public async Task<IActionResult> Create(int? firmaId) { ... }
+
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        public async Task<IActionResult> Create(Recenzie rec) { ... }
+
+        // DOAR Administratorul poate edita sau sterge recenzii
+        [Authorize(Roles = "Administrator")]
+        public async Task<IActionResult> Edit(int id) { ... }
+
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        [Authorize(Roles = "Administrator")]
+        public async Task<IActionResult> Edit(int id, Recenzie rec) { ... }
+
+        [Authorize(Roles = "Administrator")]
+        public async Task<IActionResult> Delete(int id) { ... }
+
+        [HttpPost, ActionName("Delete")]
+        [ValidateAntiForgeryToken]
+        [Authorize(Roles = "Administrator")]
+        public async Task<IActionResult> DeleteConfirmed(int id) { ... }
+    }
+}
+```
+
+
+--------------------------------------------------------------------------------
+4. CONTROLLER-UL DE CATEGORII (ACCES COMPLET BLOCAT PENTRU USER): Controllers/CategoriiController.cs
+--------------------------------------------------------------------------------
+Administrarea categoriilor este in intregime restrictionata si rezervata exclusiv Administratorului pentru modificari de structura.
+
+```csharp
+using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.Authorization;
+using recenzi_pentru_firme.Models;
+using recenzi_pentru_firme.Services;
+
+namespace recenzi_pentru_firme.Controllers
+{
+    [Authorize]
+    [Route("Administrare/Categorii")]
+    public class CategoriiController : Controller
+    {
+        // Toti utilizatorii autentificati pot vedea lista
+        [Route("")]
+        [Route("Lista")]
+        public async Task<IActionResult> Index() => View(await _service.GetToateCategoriile());
+
+        // DOAR Administratorul poate adauga, edita sau sterge o categorie
+        [Route("Nou")]
+        [Authorize(Roles = "Administrator")]
+        public IActionResult Create() => View();
+
+        [HttpPost]
+        [Route("Nou")]
+        [ValidateAntiForgeryToken]
+        [Authorize(Roles = "Administrator")]
+        public async Task<IActionResult> Create(Categorie cat) { ... }
+
+        [Route("Editeaza/{id}")]
+        [Authorize(Roles = "Administrator")]
+        public async Task<IActionResult> Edit(int id) { ... }
+
+        [HttpPost]
+        [Route("Editeaza/{id}")]
+        [ValidateAntiForgeryToken]
+        [Authorize(Roles = "Administrator")]
+        public async Task<IActionResult> Edit(int id, Categorie cat) { ... }
+
+        [Route("Sterge/{id}")]
+        [Authorize(Roles = "Administrator")]
+        public async Task<IActionResult> Delete(int id) { ... }
+
+        [HttpPost, ActionName("Delete")]
+        [Route("Sterge/{id}")]
+        [ValidateAntiForgeryToken]
+        [Authorize(Roles = "Administrator")]
+        public async Task<IActionResult> DeleteConfirmed(int id) { ... }
+    }
+}
+```

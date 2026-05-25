@@ -1,0 +1,18 @@
+@*
+    DESCRIERE:
+    Vizualizare pentru modificarea (Edit) unei categorii de firme.
+    Permite editarea numelui categoriei selectate și trimiterea datelor modificate la controller.
+*@
+
+@model recenzi_pentru_firme.Models.Categorie
+<div class="container mt-4">
+    <h2>Editează Categorie</h2>
+    <form asp-action="Edit">
+        <input type="hidden" asp-for="Id" />
+        <div class="mb-3">
+            <label asp-for="Nume" class="form-label"></label>
+            <input asp-for="Nume" class="form-control" />
+        </div>
+        <button type="submit" class="btn btn-warning">Salvează</button>
+    </form>
+</div>

@@ -1,0 +1,252 @@
+================================================================================
+TASK 1: CREATE USER REGISTRATION FUNCTIONALITY
+================================================================================
+
+Acest fisier contine toate componentele necesare pentru implementarea functionalitatii de Inregistrare Utilizator (User Registration) in ASP.NET Core MVC cu ASP.NET Core Identity.
+
+Modificarile includ validari de securitate si performanta pentru incarcarea imaginii de profil (dimensiune maxima 2 MB, extensii acceptate si tip MIME valid) pentru a asigura stabilitatea si protectia aplicatiei.
+
+--------------------------------------------------------------------------------
+1. VIEW MODEL: Models/ViewModels/RegisterViewModel.cs
+--------------------------------------------------------------------------------
+using System.ComponentModel.DataAnnotations;
+using Microsoft.AspNetCore.Http;
+
+namespace recenzi_pentru_firme.Models.ViewModels
+{
+    public class RegisterViewModel
+    {
+        [Required(ErrorMessage = "Email-ul este obligatoriu.")]
+        [EmailAddress(ErrorMessage = "Email invalid.")]
+        public string Email { get; set; } = string.Empty;
+
+        [Required(ErrorMessage = "Parola este obligatorie.")]
+        [StringLength(100, ErrorMessage = "{0} trebuie sa aiba cel putin {2} si maxim {1} caractere.", MinimumLength = 6)]
+        [DataType(DataType.Password)]
+        public string Password { get; set; } = string.Empty;
+
+        [DataType(DataType.Password)]
+        [Display(Name = "Confirmare Parola")]
+        [Compare("Password", ErrorMessage = "Parola si confirmarea parolei nu se potrivesc.")]
+        public string ConfirmPassword { get; set; } = string.Empty;
+
+        [Display(Name = "Poza de profil")]
+        public IFormFile? ProfilePictureFile { get; set; }
+    }
+}
+
+
+--------------------------------------------------------------------------------
+2. SERVICE INTERFACE: Services/IAuthService.cs
+--------------------------------------------------------------------------------
+using Microsoft.AspNetCore.Identity;
+using recenzi_pentru_firme.Models.ViewModels;
+
+namespace recenzi_pentru_firme.Services
+{
+    public interface IAuthService
+    {
+        Task<SignInResult> LoginAsync(LoginViewModel model);
+        Task<IdentityResult> RegisterAsync(RegisterViewModel model);
+        Task LogoutAsync();
+    }
+}
+
+
+--------------------------------------------------------------------------------
+3. SERVICE IMPLEMENTATION: Services/AuthService.cs
+--------------------------------------------------------------------------------
+using Microsoft.AspNetCore.Identity;
+using recenzi_pentru_firme.Models;
+using recenzi_pentru_firme.Models.ViewModels;
+
+namespace recenzi_pentru_firme.Services
+{
+    public class AuthService : IAuthService
+    {
+        private readonly UserManager<ApplicationUser> _userManager;
+        private readonly SignInManager<ApplicationUser> _signInManager;
+
+        public AuthService(UserManager<ApplicationUser> userManager, SignInManager<ApplicationUser> signInManager)
+        {
+            _userManager = userManager;
+            _signInManager = signInManager;
+        }
+
+        public async Task<IdentityResult> RegisterAsync(RegisterViewModel model)
+        {
+            byte[]? profilePictureBytes = null;
+            if (model.ProfilePictureFile != null && model.ProfilePictureFile.Length > 0)
+            {
+                using (var memoryStream = new MemoryStream())
+                {
+                    await model.ProfilePictureFile.CopyToAsync(memoryStream);
+                    profilePictureBytes = memoryStream.ToArray();
+                }
+            }
+
+            var user = new ApplicationUser
+            {
+                UserName = model.Email,
+                Email = model.Email,
+                ProfilePicture = profilePictureBytes
+            };
+
+            var result = await _userManager.CreateAsync(user, model.Password);
+
+            if (result.Succeeded)
+            {
+                await _userManager.AddToRoleAsync(user, "User");
+                await _signInManager.SignInAsync(user, isPersistent: false);
+            }
+
+            return result;
+        }
+
+        public async Task<SignInResult> LoginAsync(LoginViewModel model)
+        {
+            return await _signInManager.PasswordSignInAsync(model.Email, model.Password, model.RememberMe, lockoutOnFailure: false);
+        }
+
+        public async Task LogoutAsync()
+        {
+            await _signInManager.SignOutAsync();
+        }
+    }
+}
+
+
+--------------------------------------------------------------------------------
+4. CONTROLLER (Cu validari avansate de securitate pentru poze): Controllers/AccountController.cs
+--------------------------------------------------------------------------------
+using Microsoft.AspNetCore.Mvc;
+using recenzi_pentru_firme.Models.ViewModels;
+using recenzi_pentru_firme.Services;
+using System.IO;
+using System.Linq;
+
+namespace recenzi_pentru_firme.Controllers
+{
+    public class AccountController : Controller
+    {
+        private readonly IAuthService _authService;
+
+        public AccountController(IAuthService authService)
+        {
+            _authService = authService;
+        }
+
+        [HttpGet]
+        public IActionResult Register()
+        {
+            return View();
+        }
+
+        [HttpPost]
+        public async Task<IActionResult> Register(RegisterViewModel model)
+        {
+            if (model.ProfilePictureFile != null)
+            {
+                // 1. Validare dimensiune fisier (max 2 MB)
+                if (model.ProfilePictureFile.Length > 2 * 1024 * 1024)
+                {
+                    ModelState.AddModelError("ProfilePictureFile", "Poza de profil nu poate depasi 2 MB.");
+                }
+
+                // 2. Validare extensie fisier
+                var allowedExtensions = new[] { ".jpg", ".jpeg", ".png", ".gif" };
+                var extension = Path.GetExtension(model.ProfilePictureFile.FileName)?.ToLower();
+                if (string.IsNullOrEmpty(extension) || !allowedExtensions.Contains(extension))
+                {
+                    ModelState.AddModelError("ProfilePictureFile", "Sunt permise doar imagini (.jpg, .jpeg, .png, .gif).");
+                }
+
+                // 3. Validare MIME type
+                if (!model.ProfilePictureFile.ContentType.StartsWith("image/"))
+                {
+                    ModelState.AddModelError("ProfilePictureFile", "Fisierul incarcat trebuie sa fie o imagine valida.");
+                }
+            }
+
+            if (ModelState.IsValid)
+            {
+                var result = await _authService.RegisterAsync(model);
+
+                if (result.Succeeded)
+                {
+                    return RedirectToAction("Index", "Home");
+                }
+
+                foreach (var error in result.Errors)
+                {
+                    ModelState.AddModelError(string.Empty, error.Description);
+                }
+            }
+
+            return View(model);
+        }
+    }
+}
+
+
+--------------------------------------------------------------------------------
+5. RAZOR VIEW: Views/Account/Register.cshtml
+--------------------------------------------------------------------------------
+@model recenzi_pentru_firme.Models.ViewModels.RegisterViewModel
+
+@{
+    ViewData["Title"] = "Inregistrare";
+}
+
+<div class="row justify-content-center align-items-center mt-5 mb-5">
+    <div class="col-md-8 col-lg-6 animate-fade-up">
+        <div class="card card-premium shadow-lg border-0 overflow-hidden">
+            <div class="py-5 text-center text-white" style="background: linear-gradient(135deg, #10b981, #059669);">
+                <i class="fas fa-user-plus fa-4x mb-3"></i>
+                <h3 class="fw-bold mb-0">Creeaza Cont Nou</h3>
+                <p class="small opacity-75 mt-2">Alatura-te comunitatii noastre astazi!</p>
+            </div>
+            <div class="card-body p-4 p-lg-5">
+                <form asp-controller="Account" asp-action="Register" method="post" enctype="multipart/form-data">
+                    <div asp-validation-summary="ModelOnly" class="text-danger mb-3"></div>
+
+                    <div class="mb-4">
+                        <label asp-for="Email" class="form-label fw-bold">Adresa de Email</label>
+                        <input asp-for="Email" class="form-control form-control-premium" placeholder="nume@exemplu.com" />
+                        <span asp-validation-for="Email" class="text-danger"></span>
+                    </div>
+
+                    <div class="row mb-4">
+                        <div class="col-md-6">
+                            <label asp-for="Password" class="form-label fw-bold">Parola</label>
+                            <input asp-for="Password" type="password" class="form-control form-control-premium" placeholder="••••••••" />
+                            <span asp-validation-for="Password" class="text-danger"></span>
+                        </div>
+                        <div class="col-md-6">
+                            <label asp-for="ConfirmPassword" class="form-label fw-bold">Confirmare Parola</label>
+                            <input asp-for="ConfirmPassword" type="password" class="form-control form-control-premium" placeholder="••••••••" />
+                            <span asp-validation-for="ConfirmPassword" class="text-danger"></span>
+                        </div>
+                    </div>
+
+                    <div class="mb-4">
+                        <label asp-for="ProfilePictureFile" class="form-label fw-bold"><i class="fas fa-camera me-1"></i> Poza de profil (Optional)</label>
+                        <input asp-for="ProfilePictureFile" class="form-control form-control-premium" type="file" accept="image/*" />
+                        <span asp-validation-for="ProfilePictureFile" class="text-danger"></span>
+                    </div>
+
+                    <div class="mt-4 d-grid">
+                        <button type="submit" class="btn btn-premium btn-lg" style="background: linear-gradient(135deg, #10b981, #059669);">Creeaza Cont</button>
+                    </div>
+                </form>
+            </div>
+            <div class="card-footer text-center py-4 bg-light border-0">
+                <div class="small text-muted">Ai deja un cont? <a asp-action="Login" class="text-success fw-bold text-decoration-none">Autentifica-te!</a></div>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    @{await Html.RenderPartialAsync("_ValidationScriptsPartial");}
+}

@@ -24,11 +24,19 @@
                 <div class="collapse navbar-collapse" id="navbarNav">
                     <ul class="navbar-nav me-auto">
                         <li class="nav-item"><a class="nav-link" asp-controller="Home" asp-action="Index">Acasă</a></li>
-                        <li class="nav-item"><a class="nav-link" asp-controller="Firme" asp-action="Index">Firme</a></li>
+                        <li class="nav-item dropdown">
+                            <a class="nav-link dropdown-toggle" href="#" id="navbarDropdown" role="button" data-bs-toggle="dropdown" aria-expanded="false">
+                                Administrare
+                            </a>
+                            <ul class="dropdown-menu dropdown-menu-dark" aria-labelledby="navbarDropdown">
+                                <li><a class="dropdown-item" asp-controller="Firme" asp-action="Index">Firme</a></li>
+                                <li><a class="dropdown-item" asp-controller="Categorii" asp-action="Index">Categorii</a></li>
+                                <li><a class="dropdown-item" asp-controller="Orase" asp-action="Index">Orașe</a></li>
+                            </ul>
+                        </li>
                         <li class="nav-item"><a class="nav-link text-warning fw-bold" asp-controller="Firme" asp-action="Create"><i class="fas fa-plus-circle me-1"></i>Adaugă Firmă</a></li>
                         <li class="nav-item"><a class="nav-link" asp-controller="Home" asp-action="TopClasament">Top Clasament</a></li>
                         <li class="nav-item"><a class="nav-link" asp-controller="Firme" asp-action="AddRecenzie">Scrie Recenzie</a></li>
-                        <li class="nav-item"><a class="nav-link" asp-controller="Home" asp-action="Categorii">Categorii</a></li>
                         <li class="nav-item"><a class="nav-link" asp-controller="Home" asp-action="Despre">Despre Noi</a></li>
                     </ul>
                     <div class="d-flex align-items-center border-start ps-3 ms-3 text-white">

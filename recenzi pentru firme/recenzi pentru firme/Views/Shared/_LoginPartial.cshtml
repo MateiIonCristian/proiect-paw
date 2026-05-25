@@ -1,0 +1,56 @@
+@* 
+  --------------------------------------------------------------------------------
+  DESCRIERE: Componenta partiala de autentificare randata in bara de navigare.
+             - Afiseaza dinamic poza de profil din baza de date (byte[] convertit in Base64).
+             - Afiseaza badge-ul de "Admin" sau "User" bazat pe rolul utilizatorului.
+             - Gestioneaza butoanele de Login, Register si Logout.
+  --------------------------------------------------------------------------------
+*@
+@using Microsoft.AspNetCore.Identity
+@using recenzi_pentru_firme.Models
+@inject SignInManager<ApplicationUser> SignInManager
+@inject UserManager<ApplicationUser> UserManager
+
+<ul class="navbar-nav">
+@if (SignInManager.IsSignedIn(User))
+{
+    var user = await UserManager.GetUserAsync(User);
+    <li class="nav-item dropdown d-flex align-items-center">
+        @if (user?.ProfilePicture != null)
+        {
+            <img style="width:40px;height:40px; object-fit:cover; border-radius:30px; margin-right: 10px;" src="data:image/*;base64,@(Convert.ToBase64String(user.ProfilePicture))" alt="Profile Picture">
+        }
+        else
+        {
+            <img style="width:40px;height:40px; object-fit:cover; border-radius:30px; margin-right: 10px;" src="https://via.placeholder.com/40" alt="Default Profile Picture">
+        }
+        <a class="nav-link dropdown-toggle text-dark fw-bold" href="#" id="navbarDropdown" role="button" data-bs-toggle="dropdown" aria-expanded="false">
+            Salut, @UserManager.GetUserName(User)! 
+            @if (User.IsInRole("Administrator"))
+            {
+                <span class="badge bg-danger rounded-pill ms-1">Admin</span>
+            }
+            else
+            {
+                <span class="badge bg-primary rounded-pill ms-1">User</span>
+            }
+        </a>
+        <ul class="dropdown-menu dropdown-menu-end shadow" aria-labelledby="navbarDropdown">
+            <li>
+                <form class="form-inline" asp-controller="Account" asp-action="Logout" method="post">
+                    <button type="submit" class="dropdown-item text-danger"><i class="fas fa-sign-out-alt me-2"></i>Logout</button>
+                </form>
+            </li>
+        </ul>
+    </li>
+}
+else
+{
+    <li class="nav-item">
+        <a class="nav-link btn btn-premium-outline me-2" asp-controller="Account" asp-action="Login">Autentificare</a>
+    </li>
+    <li class="nav-item">
+        <a class="nav-link btn btn-premium" asp-controller="Account" asp-action="Register">Înregistrare</a>
+    </li>
+}
+</ul>

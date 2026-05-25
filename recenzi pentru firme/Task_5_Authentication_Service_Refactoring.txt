@@ -1,0 +1,345 @@
+================================================================================
+TASK 5: REFACTORING AUTHENTICATION LOGIC TO SERVICE LAYER
+================================================================================
+
+Acest fisier contine toate componentele modificate pentru implementarea arhitecturii cu "Separarea Responsabilitatilor" (Separation of Concerns). Toata logica de autentificare, validare de fisiere si interactiune directa cu ASP.NET Core Identity a fost mutata din Controller in clasa de servicii `AuthService`.
+
+`AccountController.cs` nu mai depinde de `UserManager<ApplicationUser>` sau de namespace-ul `System.IO`.
+
+--------------------------------------------------------------------------------
+1. SERVICE INTERFACE: Services/IAuthService.cs
+--------------------------------------------------------------------------------
+using Microsoft.AspNetCore.Identity;
+using recenzi_pentru_firme.Models.ViewModels;
+using System.Security.Claims;
+
+namespace recenzi_pentru_firme.Services
+{
+    public interface IAuthService
+    {
+        Task<SignInResult> LoginAsync(LoginViewModel model);
+        Task<IdentityResult> RegisterAsync(RegisterViewModel model);
+        Task<EditProfileViewModel?> GetEditProfileViewModelAsync(ClaimsPrincipal userPrincipal);
+        Task<IdentityResult> UpdateProfileAsync(ClaimsPrincipal userPrincipal, EditProfileViewModel model);
+        Task LogoutAsync();
+    }
+}
+
+
+--------------------------------------------------------------------------------
+2. SERVICE IMPLEMENTATION: Services/AuthService.cs
+--------------------------------------------------------------------------------
+using Microsoft.AspNetCore.Identity;
+using recenzi_pentru_firme.Models;
+using recenzi_pentru_firme.Models.ViewModels;
+using System.Collections.Generic;
+using System.IO;
+using System.Linq;
+using System.Security.Claims;
+
+namespace recenzi_pentru_firme.Services
+{
+    public class AuthService : IAuthService
+    {
+        private readonly UserManager<ApplicationUser> _userManager;
+        private readonly SignInManager<ApplicationUser> _signInManager;
+
+        public AuthService(UserManager<ApplicationUser> userManager, SignInManager<ApplicationUser> signInManager)
+        {
+            _userManager = userManager;
+            _signInManager = signInManager;
+        }
+
+        public async Task<SignInResult> LoginAsync(LoginViewModel model)
+        {
+            return await _signInManager.PasswordSignInAsync(model.Email, model.Password, model.RememberMe, lockoutOnFailure: false);
+        }
+
+        public async Task<IdentityResult> RegisterAsync(RegisterViewModel model)
+        {
+            var errors = new List<IdentityError>();
+
+            // 1. Validari imagine profil (daca este furnizata)
+            if (model.ProfilePictureFile != null)
+            {
+                if (model.ProfilePictureFile.Length > 2 * 1024 * 1024)
+                {
+                    errors.Add(new IdentityError { Code = "ProfilePictureSize", Description = "Poza de profil nu poate depasi 2 MB." });
+                }
+
+                var allowedExtensions = new[] { ".jpg", ".jpeg", ".png", ".gif" };
+                var extension = Path.GetExtension(model.ProfilePictureFile.FileName)?.ToLower();
+                if (string.IsNullOrEmpty(extension) || !allowedExtensions.Contains(extension))
+                {
+                    errors.Add(new IdentityError { Code = "ProfilePictureExtension", Description = "Sunt permise doar imagini (.jpg, .jpeg, .png, .gif)." });
+                }
+
+                if (!model.ProfilePictureFile.ContentType.StartsWith("image/"))
+                {
+                    errors.Add(new IdentityError { Code = "ProfilePictureMime", Description = "Fisierul incarcat trebuie sa fie o imagine valida." });
+                }
+            }
+
+            if (errors.Any())
+            {
+                return IdentityResult.Failed(errors.ToArray());
+            }
+
+            byte[]? profilePictureBytes = null;
+            if (model.ProfilePictureFile != null && model.ProfilePictureFile.Length > 0)
+            {
+                using (var memoryStream = new MemoryStream())
+                {
+                    await model.ProfilePictureFile.CopyToAsync(memoryStream);
+                    profilePictureBytes = memoryStream.ToArray();
+                }
+            }
+
+            var user = new ApplicationUser
+            {
+                UserName = model.Email,
+                Email = model.Email,
+                ProfilePicture = profilePictureBytes
+            };
+
+            var result = await _userManager.CreateAsync(user, model.Password);
+
+            if (result.Succeeded)
+            {
+                await _userManager.AddToRoleAsync(user, "User");
+                await _signInManager.SignInAsync(user, isPersistent: false);
+            }
+
+            return result;
+        }
+
+        public async Task<EditProfileViewModel?> GetEditProfileViewModelAsync(ClaimsPrincipal userPrincipal)
+        {
+            var user = await _userManager.GetUserAsync(userPrincipal);
+            if (user == null) return null;
+
+            return new EditProfileViewModel
+            {
+                Email = user.Email,
+                CurrentProfilePicture = user.ProfilePicture
+            };
+        }
+
+        public async Task<IdentityResult> UpdateProfileAsync(ClaimsPrincipal userPrincipal, EditProfileViewModel model)
+        {
+            var user = await _userManager.GetUserAsync(userPrincipal);
+            if (user == null)
+            {
+                return IdentityResult.Failed(new IdentityError { Description = "Utilizatorul nu a fost gasit." });
+            }
+
+            var errors = new List<IdentityError>();
+
+            // 1. Validari imagine profil noua
+            if (model.NewProfilePictureFile != null)
+            {
+                if (model.NewProfilePictureFile.Length > 2 * 1024 * 1024)
+                {
+                    errors.Add(new IdentityError { Code = "NewProfilePictureSize", Description = "Poza de profil nu poate depasi 2 MB." });
+                }
+
+                var allowedExtensions = new[] { ".jpg", ".jpeg", ".png", ".gif" };
+                var extension = Path.GetExtension(model.NewProfilePictureFile.FileName)?.ToLower();
+                if (string.IsNullOrEmpty(extension) || !allowedExtensions.Contains(extension))
+                {
+                    errors.Add(new IdentityError { Code = "NewProfilePictureExtension", Description = "Sunt permise doar imagini (.jpg, .jpeg, .png, .gif)." });
+                }
+
+                if (!model.NewProfilePictureFile.ContentType.StartsWith("image/"))
+                {
+                    errors.Add(new IdentityError { Code = "NewProfilePictureMime", Description = "Fisierul incarcat trebuie sa fie o imagine valida." });
+                }
+            }
+
+            if (errors.Any())
+            {
+                return IdentityResult.Failed(errors.ToArray());
+            }
+
+            if (model.RemoveCurrentPicture)
+            {
+                user.ProfilePicture = null;
+            }
+            else if (model.NewProfilePictureFile != null && model.NewProfilePictureFile.Length > 0)
+            {
+                using (var memoryStream = new MemoryStream())
+                {
+                    await model.NewProfilePictureFile.CopyToAsync(memoryStream);
+                    user.ProfilePicture = memoryStream.ToArray();
+                }
+            }
+
+            var result = await _userManager.UpdateAsync(user);
+            if (result.Succeeded)
+            {
+                await _signInManager.RefreshSignInAsync(user);
+            }
+            return result;
+        }
+
+        public async Task LogoutAsync()
+        {
+            await _signInManager.SignOutAsync();
+        }
+    }
+}
+
+
+--------------------------------------------------------------------------------
+3. REFACTORED CONTROLLER: Controllers/AccountController.cs
+--------------------------------------------------------------------------------
+using Microsoft.AspNetCore.Mvc;
+using recenzi_pentru_firme.Models.ViewModels;
+using recenzi_pentru_firme.Services;
+using Microsoft.AspNetCore.Authorization;
+
+namespace recenzi_pentru_firme.Controllers
+{
+    public class AccountController : Controller
+    {
+        private readonly IAuthService _authService;
+
+        public AccountController(IAuthService authService)
+        {
+            _authService = authService;
+        }
+
+        [HttpGet]
+        public IActionResult Register()
+        {
+            return View();
+        }
+
+        [HttpPost]
+        public async Task<IActionResult> Register(RegisterViewModel model)
+        {
+            if (ModelState.IsValid)
+            {
+                var result = await _authService.RegisterAsync(model);
+
+                if (result.Succeeded)
+                {
+                    return RedirectToAction("Index", "Home");
+                }
+
+                foreach (var error in result.Errors)
+                {
+                    if (error.Code != null && error.Code.StartsWith("ProfilePicture"))
+                    {
+                        ModelState.AddModelError("ProfilePictureFile", error.Description);
+                    }
+                    else
+                    {
+                        ModelState.AddModelError(string.Empty, error.Description);
+                    }
+                }
+            }
+
+            return View(model);
+        }
+
+        [HttpGet]
+        public IActionResult Login(string returnUrl = null)
+        {
+            ViewData["ReturnUrl"] = returnUrl;
+            return View();
+        }
+
+        [HttpPost]
+        public async Task<IActionResult> Login(LoginViewModel model, string returnUrl = null)
+        {
+            ViewData["ReturnUrl"] = returnUrl;
+
+            if (ModelState.IsValid)
+            {
+                var result = await _authService.LoginAsync(model);
+
+                if (result.Succeeded)
+                {
+                    if (!string.IsNullOrEmpty(returnUrl) && Url.IsLocalUrl(returnUrl))
+                    {
+                        return Redirect(returnUrl);
+                    }
+                    else
+                    {
+                        return RedirectToAction("Index", "Home");
+                    }
+                }
+
+                if (result.IsLockedOut)
+                {
+                    ModelState.AddModelError(string.Empty, "Contul este blocat temporar din cauza incercarilor esuate repetate.");
+                }
+                else if (result.IsNotAllowed)
+                {
+                    ModelState.AddModelError(string.Empty, "Autentificarea nu este permisa pentru acest cont (ex: e-mail neconfirmat).");
+                }
+                else
+                {
+                    ModelState.AddModelError(string.Empty, "Adresa de e-mail sau parola incorecta.");
+                }
+            }
+
+            return View(model);
+        }
+
+        [HttpGet]
+        [Authorize]
+        public async Task<IActionResult> EditProfil()
+        {
+            var model = await _authService.GetEditProfileViewModelAsync(User);
+            if (model == null) return Challenge();
+
+            return View(model);
+        }
+
+        [HttpPost]
+        [Authorize]
+        [ValidateAntiForgeryToken]
+        public async Task<IActionResult> EditProfil(EditProfileViewModel model)
+        {
+            if (ModelState.IsValid)
+            {
+                var result = await _authService.UpdateProfileAsync(User, model);
+                if (result.Succeeded)
+                {
+                    TempData["SuccessMessage"] = "Profilul a fost actualizat cu succes!";
+                    return RedirectToAction("Profil", "Home");
+                }
+
+                foreach (var error in result.Errors)
+                {
+                    if (error.Code != null && error.Code.StartsWith("NewProfilePicture"))
+                    {
+                        ModelState.AddModelError("NewProfilePictureFile", error.Description);
+                    }
+                    else
+                    {
+                        ModelState.AddModelError(string.Empty, error.Description);
+                    }
+                }
+            }
+
+            // Daca validarea a esuat, reincarcam poza curenta pentru a o afisa in formular
+            var currentModel = await _authService.GetEditProfileViewModelAsync(User);
+            if (currentModel != null)
+            {
+                model.CurrentProfilePicture = currentModel.CurrentProfilePicture;
+            }
+
+            return View(model);
+        }
+
+        [HttpPost]
+        public async Task<IActionResult> Logout()
+        {
+            await _authService.LogoutAsync();
+            return RedirectToAction("Index", "Home");
+        }
+    }
+}

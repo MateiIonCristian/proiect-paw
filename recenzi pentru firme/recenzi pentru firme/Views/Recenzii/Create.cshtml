@@ -1,0 +1,66 @@
+@*
+    DESCRIERE:
+    Vizualizare destinată creării unei recenzii noi (Create).
+    Încarcă automat numele utilizatorului logat și prezintă controale de selectare a firmei, rating numeric (1-5) și zonă text pentru comentarii.
+*@
+
+@model recenzi_pentru_firme.Models.Recenzie
+
+@{
+    ViewData["Title"] = "Adaugă Recenzie";
+}
+
+<div class="container mt-4">
+    <div class="row justify-content-center">
+        <div class="col-md-6">
+            <div class="card shadow border-0">
+                <div class="card-header bg-warning text-dark text-center py-3">
+                    <h3 class="fw-bold mb-0"><i class="fas fa-pen-fancy me-2"></i>Scrie o Recenzie</h3>
+                </div>
+                <div class="card-body p-4">
+                    <form asp-action="Create">
+                        <div asp-validation-summary="ModelOnly" class="text-danger mb-3"></div>
+                        
+                        <div class="mb-3">
+                            <label asp-for="FirmaId" class="form-label fw-bold">Selectează Firma</label>
+                            <select asp-for="FirmaId" class="form-select" asp-items="ViewBag.Firme">
+                                <option value="">-- Alege o firmă --</option>
+                            </select>
+                            <span asp-validation-for="FirmaId" class="text-danger"></span>
+                        </div>
+
+                        <div class="mb-3">
+                            <label asp-for="Autor" class="form-label fw-bold">Numele tău (Autocompletat)</label>
+                            <input asp-for="Autor" class="form-control" readonly />
+                            <span asp-validation-for="Autor" class="text-danger"></span>
+                        </div>
+
+                        <div class="mb-3">
+                            <label asp-for="Nota" class="form-label fw-bold">Notă (1-5)</label>
+                            <div class="input-group">
+                                <span class="input-group-text"><i class="fas fa-star text-warning"></i></span>
+                                <input asp-for="Nota" type="number" min="1" max="5" class="form-control" />
+                            </div>
+                            <span asp-validation-for="Nota" class="text-danger"></span>
+                        </div>
+
+                        <div class="mb-3">
+                            <label asp-for="Continut" class="form-label fw-bold">Experiența ta</label>
+                            <textarea asp-for="Continut" class="form-control" rows="4" placeholder="Ce ți-a plăcut la această firmă?"></textarea>
+                            <span asp-validation-for="Continut" class="text-danger"></span>
+                        </div>
+
+                        <div class="d-grid gap-2 mt-4">
+                            <button type="submit" class="btn btn-warning btn-lg fw-bold">Publică Recenzia</button>
+                            <a asp-action="Index" class="btn btn-outline-secondary">Anulează</a>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    @{await Html.RenderPartialAsync("_ValidationScriptsPartial");}
+}
